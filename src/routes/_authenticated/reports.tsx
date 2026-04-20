@@ -161,7 +161,7 @@ function ReportsPage() {
   );
 }
 
-function KPI({ label, value, unit, sub, icon }: { label: string; value: string; unit: string; sub?: string | false; icon: React.ReactNode }) {
+function KPI({ label, value, unit, sub, icon }: { label: string; value: string; unit: string; sub?: string | false | null; icon: React.ReactNode }) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
