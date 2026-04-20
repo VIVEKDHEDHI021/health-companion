@@ -16,13 +16,14 @@ const schema = z.object({
   weight_kg: z.coerce.number().min(20).max(400),
   notes: z.string().max(500).optional(),
 });
-type FormData = z.infer<typeof schema>;
+type FormData = z.output<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 export function WeightDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; onSaved?: () => void }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<FormData>({
+  const form = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
     defaultValues: { entry_date: format(new Date(), "yyyy-MM-dd"), weight_kg: undefined as unknown as number, notes: "" },
   });

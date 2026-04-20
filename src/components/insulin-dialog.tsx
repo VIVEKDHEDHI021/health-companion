@@ -18,13 +18,14 @@ const schema = z.object({
   evening: z.coerce.number().min(0).max(200),
   night: z.coerce.number().min(0).max(200),
 });
-type FormData = z.infer<typeof schema>;
+type FormData = z.output<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 export function InsulinDialog({ open, onOpenChange, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; onSaved?: () => void }) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<FormData>({
+  const form = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
     defaultValues: {
       entry_date: format(new Date(), "yyyy-MM-dd"),

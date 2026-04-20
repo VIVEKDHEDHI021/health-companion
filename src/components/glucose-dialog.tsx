@@ -22,7 +22,8 @@ const schema = z.object({
   notes: z.string().max(1000).optional(),
   symptoms: z.string().max(500).optional(),
 });
-type FormData = z.infer<typeof schema>;
+type FormData = z.output<typeof schema>;
+type FormInput = z.input<typeof schema>;
 
 interface Props {
   open: boolean;
@@ -35,7 +36,7 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
-  const form = useForm<FormData>({
+  const form = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
     values: {
       glucose: entry?.glucose ?? ("" as unknown as number),
