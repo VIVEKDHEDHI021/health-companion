@@ -3,13 +3,13 @@ import { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
 import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
-import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/lib/types";
+import { supabase } from "@/db/client";
+import { useAuth } from "@/frontend/lib/auth-context";
+import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/frontend/lib/types";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
-  head: () => ({ meta: [{ title: "Reports — Diabetes Tracker Pro" }] }),
+  head: () => ({ meta: [{ title: "Reports — GlucoLab" }] }),
 });
 
 function ReportsPage() {

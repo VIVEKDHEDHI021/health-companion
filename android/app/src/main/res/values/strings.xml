@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">GlucoLab</string>
+    <string name="title_activity_main">GlucoLab</string>
+    <string name="package_name">com.glucolab.app</string>
+    <string name="custom_url_scheme">com.glucolab.app</string>
+</resources>

@@ -1,7 +1,7 @@
 import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
-import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/lib/auth-context";
-import { ThemeProvider } from "@/lib/theme";
+import { Toaster } from "@/frontend/components/ui/sonner";
+import { AuthProvider } from "@/frontend/lib/auth-context";
+import { ThemeProvider } from "@/frontend/lib/theme";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -25,9 +25,9 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
       { name: "theme-color", content: "#2563eb" },
-      { title: "Diabetes Tracker Pro — Track glucose, insulin & weight" },
+      { title: "GlucoLab — Track glucose, insulin & weight" },
       { name: "description", content: "Securely log glucose readings, insulin doses, and weight. Generate doctor-ready reports and Excel exports." },
-      { property: "og:title", content: "Diabetes Tracker Pro" },
+      { property: "og:title", content: "GlucoLab" },
       { property: "og:description", content: "Premium diabetes management — glucose, insulin, weight tracking and reports." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -40,7 +40,6 @@ export const Route = createRootRoute({
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
 });
@@ -59,11 +58,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Outlet />
-        <Toaster richColors position="top-center" />
-      </AuthProvider>
-    </ThemeProvider>
+    <RootShell>
+      <ThemeProvider>
+        <AuthProvider>
+          <Outlet />
+          <Toaster richColors position="top-center" />
+        </AuthProvider>
+      </ThemeProvider>
+    </RootShell>
   );
 }

@@ -1,6 +1,6 @@
 {
-  "name": "Diabetes Tracker Pro",
-  "short_name": "Diabetes Pro",
+  "name": "GlucoLab",
+  "short_name": "GlucoLab",
   "description": "Track glucose, insulin, weight and generate doctor reports.",
   "start_url": "/",
   "display": "standalone",

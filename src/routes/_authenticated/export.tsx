@@ -6,16 +6,16 @@ import { toast } from "sonner";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry, type ReadingType } from "@/lib/types";
+import { supabase } from "@/db/client";
+import { useAuth } from "@/frontend/lib/auth-context";
+import { Button } from "@/frontend/components/ui/button";
+import { Input } from "@/frontend/components/ui/input";
+import { Label } from "@/frontend/components/ui/label";
+import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry, type ReadingType } from "@/frontend/lib/types";
 
 export const Route = createFileRoute("/_authenticated/export")({
   component: ExportPage,
-  head: () => ({ meta: [{ title: "Export — Diabetes Tracker Pro" }] }),
+  head: () => ({ meta: [{ title: "Export — GlucoLab" }] }),
 });
 
 interface DailyRow {

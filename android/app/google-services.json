@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "146114906371",
+    "project_id": "glucolab",
+    "storage_bucket": "glucolab.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:146114906371:android:04bbfa3324750a9186c136",
+        "android_client_info": {
+          "package_name": "com.glucolab.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "146114906371-0olivp7grrpm46aienqcna75tcobbur6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_yiA_GmFQZh2iT0SHndjZa2CqhJhFoeU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "146114906371-0olivp7grrpm46aienqcna75tcobbur6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

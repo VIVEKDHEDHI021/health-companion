@@ -3,18 +3,18 @@ import { useEffect, useState } from "react";
 import { format } from "date-fns";
 import { Pencil, Trash2, Search, Droplet } from "lucide-react";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { GlucoseDialog } from "@/components/glucose-dialog";
-import { READING_LABELS, glucoseStatus, type GlucoseEntry } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/db/client";
+import { useAuth } from "@/frontend/lib/auth-context";
+import { Input } from "@/frontend/components/ui/input";
+import { Button } from "@/frontend/components/ui/button";
+import { Badge } from "@/frontend/components/ui/badge";
+import { GlucoseDialog } from "@/frontend/components/glucose-dialog";
+import { READING_LABELS, glucoseStatus, type GlucoseEntry } from "@/frontend/lib/types";
+import { cn } from "@/frontend/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/history")({
   component: HistoryPage,
-  head: () => ({ meta: [{ title: "History — Diabetes Tracker Pro" }] }),
+  head: () => ({ meta: [{ title: "History — GlucoLab" }] }),
 });
 
 function HistoryPage() {
@@ -103,7 +103,7 @@ function HistoryPage() {
                     </div>
                     {(e.food || e.notes || e.symptoms) && (
                       <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {[e.food, e.symptoms, e.notes].filter(Boolean).join(" · ")}
+                        {[e.food, e.symptoms ? `Insulin: ${e.symptoms}` : null, e.notes].filter(Boolean).join(" · ")}
                       </div>
                     )}
                   </div>

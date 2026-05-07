@@ -3,18 +3,21 @@ import { useEffect, useMemo, useState } from "react";
 import { Activity, Droplet, Syringe, Scale, Plus, TrendingUp, AlertCircle, Clock } from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
 import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceArea } from "recharts";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
-import { Button } from "@/components/ui/button";
-import { GlucoseDialog } from "@/components/glucose-dialog";
-import { InsulinDialog } from "@/components/insulin-dialog";
-import { WeightDialog } from "@/components/weight-dialog";
-import { READING_LABELS, glucoseStatus, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { supabase } from "@/db/client";
+import { healthService } from "@/backend/services/healthService";
+import { useAuth } from "@/frontend/lib/auth-context";
+import { Button } from "@/frontend/components/ui/button";
+import { GlucoseDialog } from "@/frontend/components/glucose-dialog";
+import { InsulinDialog } from "@/frontend/components/insulin-dialog";
+import { WeightDialog } from "@/frontend/components/weight-dialog";
+import { ProfileDialog } from "@/frontend/components/profile-dialog";
+import { READING_LABELS, glucoseStatus, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/frontend/lib/types";
+import { Settings } from "lucide-react";
+import { cn } from "@/frontend/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
-  head: () => ({ meta: [{ title: "Dashboard — Diabetes Tracker Pro" }] }),
+  head: () => ({ meta: [{ title: "Dashboard — GlucoLab" }] }),
 });
 
 function DashboardPage() {
@@ -25,17 +28,12 @@ function DashboardPage() {
   const [glucoseOpen, setGlucoseOpen] = useState(false);
   const [insulinOpen, setInsulinOpen] = useState(false);
   const [weightOpen, setWeightOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>("");
 
   const load = async () => {
     if (!user) return;
-    const since = subDays(new Date(), 30).toISOString();
-    const [g, i, w, p] = await Promise.all([
-      supabase.from("glucose_entries").select("*").gte("date_time", since).order("date_time", { ascending: false }),
-      supabase.from("insulin_entries").select("*").gte("entry_date", format(subDays(new Date(), 30), "yyyy-MM-dd")).order("entry_date", { ascending: false }),
-      supabase.from("weight_entries").select("*").gte("entry_date", format(subDays(new Date(), 30), "yyyy-MM-dd")).order("entry_date", { ascending: false }),
-      supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle(),
-    ]);
+    const [g, i, w, p] = await healthService.getDashboardData(user.id);
     if (g.data) setGlucose(g.data as GlucoseEntry[]);
     if (i.data) setInsulin(i.data as InsulinEntry[]);
     if (w.data) setWeight(w.data as WeightEntry[]);
@@ -49,9 +47,9 @@ function DashboardPage() {
   const weekReadings = glucose.filter((g) => isAfter(new Date(g.date_time), weekAgo));
   const avgWeek = weekReadings.length ? Math.round(weekReadings.reduce((s, r) => s + Number(r.glucose), 0) / weekReadings.length) : 0;
   const latestWeight = weight[0];
-  const todayInsulin = insulin.find((i) => i.entry_date === format(new Date(), "yyyy-MM-dd"));
-  const insulinFmt = todayInsulin ? `${todayInsulin.morning}-${todayInsulin.lunch}-${todayInsulin.evening}-${todayInsulin.night}` : "—";
-  const insulinTotal = todayInsulin ? Number(todayInsulin.morning) + Number(todayInsulin.lunch) + Number(todayInsulin.evening) + Number(todayInsulin.night) : 0;
+  const latestInsulin = insulin[0];
+  const insulinFmt = latestInsulin ? `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.evening}-${latestInsulin.night}` : "—";
+  const insulinTotal = latestInsulin ? Number(latestInsulin.morning) + Number(latestInsulin.lunch) + Number(latestInsulin.evening) + Number(latestInsulin.night) : 0;
 
   const chartData = useMemo(
     () => [...weekReadings].reverse().map((r) => ({
@@ -87,6 +85,9 @@ function DashboardPage() {
           <Button onClick={() => setWeightOpen(true)} size="lg" variant="secondary">
             <Scale className="mr-1.5 h-4 w-4" /> Weight
           </Button>
+          <Button onClick={() => setProfileOpen(true)} size="lg" variant="ghost" className="px-3">
+            <Settings className="h-5 w-5" />
+          </Button>
         </div>
       </div>
 
@@ -109,10 +110,10 @@ function DashboardPage() {
         />
         <StatCard
           icon={<Syringe className="h-5 w-5" />}
-          label="Today insulin"
+          label="Latest insulin"
           value={insulinFmt}
           unit=""
-          sub={`Total: ${insulinTotal} units`}
+          sub={latestInsulin ? `Total: ${insulinTotal} units · ${format(new Date(latestInsulin.entry_date), "MMM d")}` : "No data"}
         />
         <StatCard
           icon={<Scale className="h-5 w-5" />}
@@ -165,6 +166,7 @@ function DashboardPage() {
       <GlucoseDialog open={glucoseOpen} onOpenChange={setGlucoseOpen} onSaved={load} />
       <InsulinDialog open={insulinOpen} onOpenChange={setInsulinOpen} onSaved={load} />
       <WeightDialog open={weightOpen} onOpenChange={setWeightOpen} onSaved={load} />
+      <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} onSaved={load} />
     </div>
   );
 }
