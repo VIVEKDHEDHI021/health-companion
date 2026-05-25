@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environments
+.env
+.env.*
+
+# Local scripts (contain sensitive credentials)
+check_db.mjs
+test_auth.mjs
