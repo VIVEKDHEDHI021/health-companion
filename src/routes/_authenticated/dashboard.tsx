@@ -33,14 +33,24 @@ function DashboardPage() {
 
   const load = async () => {
     if (!user) return;
-    const [g, i, w, p] = await healthService.getDashboardData(user.id);
+    const [g, i, w, p] = await healthService.getDashboardData();
     if (g.data) setGlucose(g.data as GlucoseEntry[]);
     if (i.data) setInsulin(i.data as InsulinEntry[]);
     if (w.data) setWeight(w.data as WeightEntry[]);
     if (p.data?.name) setProfileName(p.data.name);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => {
+    if (!user) {
+      setGlucose([]);
+      setInsulin([]);
+      setWeight([]);
+      setProfileName("");
+      return;
+    }
+    load();
+    /* eslint-disable-next-line */
+  }, [user]);
 
   const latest = glucose[0];
   const weekAgo = subDays(new Date(), 7);

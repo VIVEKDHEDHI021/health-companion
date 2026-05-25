@@ -26,14 +26,16 @@ interface DailyRow {
   totalInsulin: number | ""; weight: number | ""; notes: string;
 }
 
-async function fetchAll(userId: string, from: string, to: string) {
+async function fetchAll(from: string, to: string) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
   const fromIso = new Date(from).toISOString();
   const toIso = new Date(`${to}T23:59:59`).toISOString();
   const [g, i, w, p] = await Promise.all([
-    supabase.from("glucose_entries").select("*").gte("date_time", fromIso).lte("date_time", toIso).order("date_time"),
-    supabase.from("insulin_entries").select("*").gte("entry_date", from).lte("entry_date", to),
-    supabase.from("weight_entries").select("*").gte("entry_date", from).lte("entry_date", to),
-    supabase.from("profiles").select("*").eq("user_id", userId).maybeSingle(),
+    supabase.from("glucose_entries").select("*").eq("user_id", user.id).gte("date_time", fromIso).lte("date_time", toIso).order("date_time"),
+    supabase.from("insulin_entries").select("*").eq("user_id", user.id).gte("entry_date", from).lte("entry_date", to),
+    supabase.from("weight_entries").select("*").eq("user_id", user.id).gte("entry_date", from).lte("entry_date", to),
+    supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
   ]);
   return {
     glucose: (g.data ?? []) as GlucoseEntry[],
@@ -89,7 +91,7 @@ function ExportPage() {
     if (!user) return;
     setBusy("xlsx");
     try {
-      const { glucose, insulin, weight, profile } = await fetchAll(user.id, from, to);
+      const { glucose, insulin, weight, profile } = await fetchAll(from, to);
       const rows = buildDailyRows(glucose, insulin, weight);
       const data = rows.map((r) => ({
         Date: r.date, BB: r.BB, AB: r.AB, BL: r.BL, AL: r.AL, BD: r.BD, AD: r.AD, BT: r.BT, Fasting: r.Fasting,
@@ -112,7 +114,7 @@ function ExportPage() {
     if (!user) return;
     setBusy("pdf");
     try {
-      const { glucose, insulin, weight, profile } = await fetchAll(user.id, from, to);
+      const { glucose, insulin, weight, profile } = await fetchAll(from, to);
       const rows = buildDailyRows(glucose, insulin, weight);
 
       const values = glucose.map((g) => Number(g.glucose));

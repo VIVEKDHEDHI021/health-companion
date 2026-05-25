@@ -27,15 +27,23 @@ function HistoryPage() {
   const [open, setOpen] = useState(false);
 
   const load = async () => {
-    if (!user) return;
-    let q = supabase.from("glucose_entries").select("*").order("date_time", { ascending: false });
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) return;
+    let q = supabase.from("glucose_entries").select("*").eq("user_id", currentUser.id).order("date_time", { ascending: false });
     if (from) q = q.gte("date_time", new Date(from).toISOString());
     if (to) q = q.lte("date_time", new Date(`${to}T23:59:59`).toISOString());
     const { data } = await q;
     if (data) setEntries(data as GlucoseEntry[]);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user, from, to]);
+  useEffect(() => {
+    if (!user) {
+      setEntries([]);
+      return;
+    }
+    load();
+    /* eslint-disable-next-line */
+  }, [user, from, to]);
 
   const filtered = entries.filter((e) => {
     if (!search) return true;
@@ -49,8 +57,10 @@ function HistoryPage() {
   });
 
   const handleDelete = async (id: string) => {
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) { toast.error("Not authenticated"); return; }
     if (!confirm("Delete this entry?")) return;
-    const { error } = await supabase.from("glucose_entries").delete().eq("id", id);
+    const { error } = await supabase.from("glucose_entries").delete().eq("id", id).eq("user_id", currentUser.id);
     if (error) { toast.error(error.message); return; }
     toast.success("Deleted");
     load();

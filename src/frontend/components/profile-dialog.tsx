@@ -36,7 +36,7 @@ export function ProfileDialog({ open, onOpenChange, onSaved }: Props) {
 
   useEffect(() => {
     if (open && user) {
-      healthService.getProfile(user.id).then((res) => {
+      healthService.getProfile().then((res) => {
         if (res.data) {
           form.reset({
             name: res.data.name || "",
@@ -51,7 +51,7 @@ export function ProfileDialog({ open, onOpenChange, onSaved }: Props) {
     if (!user) return;
     setSaving(true);
     try {
-      const res = await healthService.updateProfile(user.id, data);
+      const res = await healthService.updateProfile(data);
       if (res.error) throw res.error;
       toast.success("Profile updated");
       onOpenChange(false);

@@ -64,7 +64,7 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
         symptoms: data.insulin_all_day || null,
       };
       const res = entry
-        ? await supabase.from("glucose_entries").update(payload).eq("id", entry.id)
+        ? await supabase.from("glucose_entries").update(payload).eq("id", entry.id).eq("user_id", user.id)
         : await supabase.from("glucose_entries").insert(payload);
       if (res.error) throw res.error;
       
@@ -72,7 +72,7 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
       if (!entry) {
         console.log("[GLUCOSE_DIALOG] Fetching profile for alert...");
         try {
-          const p = await healthService.getProfile(user.id);
+          const p = await healthService.getProfile();
           if (p.data?.phone) {
             console.log("[GLUCOSE_DIALOG] Sending alert to:", p.data.phone);
             await messagingService.sendGlucoseAlert(p.data.phone, {

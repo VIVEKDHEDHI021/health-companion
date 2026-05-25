@@ -20,14 +20,21 @@ function ReportsPage() {
   const [weight, setWeight] = useState<WeightEntry[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setGlucose([]);
+      setInsulin([]);
+      setWeight([]);
+      return;
+    }
     (async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return;
       const sinceIso = subDays(new Date(), days).toISOString();
       const sinceDate = format(subDays(new Date(), days), "yyyy-MM-dd");
       const [g, i, w] = await Promise.all([
-        supabase.from("glucose_entries").select("*").gte("date_time", sinceIso).order("date_time"),
-        supabase.from("insulin_entries").select("*").gte("entry_date", sinceDate).order("entry_date"),
-        supabase.from("weight_entries").select("*").gte("entry_date", sinceDate).order("entry_date"),
+        supabase.from("glucose_entries").select("*").eq("user_id", currentUser.id).gte("date_time", sinceIso).order("date_time"),
+        supabase.from("insulin_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", sinceDate).order("entry_date"),
+        supabase.from("weight_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", sinceDate).order("entry_date"),
       ]);
       if (g.data) setGlucose(g.data as GlucoseEntry[]);
       if (i.data) setInsulin(i.data as InsulinEntry[]);
