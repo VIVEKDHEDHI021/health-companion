@@ -186,23 +186,23 @@ function ExportPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="from">From</Label>
-            <Input id="from" type="date" value={from} onChange={(e) => {
-              const newFrom = e.target.value;
-              setFrom(newFrom);
-              if (new Date(newFrom) > new Date(to)) {
-                setTo(newFrom);
-              }
-            }} />
+            <Input 
+              id="from" 
+              type="date" 
+              value={from} 
+              max={to}
+              onChange={(e) => setFrom(e.target.value)} 
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="to">To</Label>
-            <Input id="to" type="date" value={to} onChange={(e) => {
-              const newTo = e.target.value;
-              setTo(newTo);
-              if (new Date(newTo) < new Date(from)) {
-                setFrom(newTo);
-              }
-            }} />
+            <Input 
+              id="to" 
+              type="date" 
+              value={to} 
+              min={from}
+              onChange={(e) => setTo(e.target.value)} 
+            />
           </div>
         </div>
       </div>
