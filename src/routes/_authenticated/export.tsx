@@ -45,7 +45,7 @@ async function fetchAll(from: string, to: string) {
   };
 }
 
-function buildDailyRows(g: GlucoseEntry[], i: InsulinEntry[], w: WeightEntry[]): DailyRow[] {
+function buildDailyRows(from: string, to: string, g: GlucoseEntry[], i: InsulinEntry[], w: WeightEntry[]): DailyRow[] {
   const map = new Map<string, DailyRow>();
   const ensure = (d: string): DailyRow => {
     if (!map.has(d)) {
@@ -56,6 +56,16 @@ function buildDailyRows(g: GlucoseEntry[], i: InsulinEntry[], w: WeightEntry[]):
     }
     return map.get(d)!;
   };
+
+  // Pre-fill all dates from start to end
+  const startDate = new Date(from);
+  const endDate = new Date(to);
+  // Ensure we don't have an infinite loop if dates are invalid
+  if (!isNaN(startDate.getTime()) && !isNaN(endDate.getTime())) {
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      ensure(format(d, "yyyy-MM-dd"));
+    }
+  }
 
   g.forEach((e) => {
     const d = format(new Date(e.date_time), "yyyy-MM-dd");
@@ -92,7 +102,7 @@ function ExportPage() {
     setBusy("xlsx");
     try {
       const { glucose, insulin, weight, profile } = await fetchAll(from, to);
-      const rows = buildDailyRows(glucose, insulin, weight);
+      const rows = buildDailyRows(from, to, glucose, insulin, weight);
       const data = rows.map((r) => ({
         Date: r.date, BB: r.BB, AB: r.AB, BL: r.BL, AL: r.AL, BD: r.BD, AD: r.AD, BT: r.BT, Fasting: r.Fasting,
         "Insulin M": r.insulinM, "Insulin L": r.insulinL, "Insulin E": r.insulinE, "Insulin N": r.insulinN,
@@ -115,7 +125,7 @@ function ExportPage() {
     setBusy("pdf");
     try {
       const { glucose, insulin, weight, profile } = await fetchAll(from, to);
-      const rows = buildDailyRows(glucose, insulin, weight);
+      const rows = buildDailyRows(from, to, glucose, insulin, weight);
 
       const values = glucose.map((g) => Number(g.glucose));
       const avg = values.length ? Math.round(values.reduce((a, b) => a + b, 0) / values.length) : 0;
