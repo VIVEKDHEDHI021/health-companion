@@ -1,5 +1,16 @@
 import { Link, useNavigate, useLocation } from "@tanstack/react-router";
-import { Activity, Home, History, BarChart3, FileDown, LogOut, Moon, Sun, Menu, X } from "lucide-react";
+import {
+  Activity,
+  Home,
+  History,
+  BarChart3,
+  FileDown,
+  LogOut,
+  Moon,
+  Sun,
+  Menu,
+  X,
+} from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/frontend/lib/auth-context";
 import { useTheme } from "@/frontend/lib/theme";
@@ -39,7 +50,9 @@ export function AppShell({ children }: { children: ReactNode }) {
             </div>
             <div className="leading-tight">
               <div className="font-display text-base font-bold">GlucoLab</div>
-              <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">Pro</div>
+              <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+                Pro
+              </div>
             </div>
           </Link>
 
@@ -55,7 +68,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     "flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                     active
                       ? "bg-primary-soft text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -69,10 +82,22 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut} aria-label="Sign out" className="hidden md:inline-flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleSignOut}
+              aria-label="Sign out"
+              className="hidden md:inline-flex"
+            >
               <LogOut className="h-5 w-5" />
             </Button>
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen((o) => !o)} aria-label="Menu">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={() => setOpen((o) => !o)}
+              aria-label="Menu"
+            >
               {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
@@ -92,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                     onClick={() => setOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium",
-                      active ? "bg-primary-soft text-primary" : "text-foreground hover:bg-muted"
+                      active ? "bg-primary-soft text-primary" : "text-foreground hover:bg-muted",
                     )}
                   >
                     <Icon className="h-5 w-5" />
@@ -106,7 +131,9 @@ export function AppShell({ children }: { children: ReactNode }) {
               >
                 <LogOut className="h-5 w-5" /> Sign out
               </button>
-              <div className="px-3 pt-2 text-xs text-muted-foreground">Signed in as {user?.email}</div>
+              <div className="px-3 pt-2 text-xs text-muted-foreground">
+                Signed in as {user?.email}
+              </div>
             </div>
           </div>
         )}
@@ -126,7 +153,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                 to={n.to}
                 className={cn(
                   "flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium transition-colors",
-                  active ? "text-primary" : "text-muted-foreground"
+                  active ? "text-primary" : "text-muted-foreground",
                 )}
               >
                 <Icon className={cn("h-5 w-5", active && "stroke-[2.5]")} />

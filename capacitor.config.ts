@@ -1,13 +1,13 @@
-import type { CapacitorConfig } from '@capacitor/cli';
+import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
-  appId: 'com.glucolab.app',
-  appName: 'GlucoLab',
-  webDir: 'dist/client',
+  appId: "com.glucolab.app",
+  appName: "GlucoLab",
+  webDir: "dist/client",
   server: {
-    url: 'https://tanstack-start-app.glucolab.workers.dev',
-    cleartext: true
-  }
+    url: "https://tanstack-start-app.glucolab.workers.dev",
+    cleartext: true,
+  },
 };
 
 export default config;

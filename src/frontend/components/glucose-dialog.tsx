@@ -8,18 +8,40 @@ import { supabase } from "@/db/client";
 import { healthService } from "@/backend/services/healthService";
 import { useAuth } from "@/frontend/lib/auth-context";
 import { messagingService } from "@/frontend/lib/messaging";
-import { READING_TYPES, READING_LABELS, type ReadingType, type GlucoseEntry } from "@/frontend/lib/types";
+import {
+  READING_TYPES,
+  READING_LABELS,
+  type ReadingType,
+  type GlucoseEntry,
+} from "@/frontend/lib/types";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
 import { Textarea } from "@/frontend/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/frontend/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/frontend/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/frontend/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/frontend/components/ui/select";
 
 const schema = z.object({
   glucose: z.coerce.number().min(20, "Too low").max(800, "Too high"),
   reading_type: z.enum(READING_TYPES),
-  date_time: z.string().min(1, "Required"),
+  date_time: z
+    .string()
+    .min(1, "Required")
+    .refine((val) => {
+      return new Date(val) <= new Date();
+    }, "Future dates are not allowed"),
   food: z.string().max(500).optional(),
   notes: z.string().max(1000).optional(),
   insulin_all_day: z.string().max(500).optional(),
@@ -43,7 +65,9 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
     values: {
       glucose: entry?.glucose ?? ("" as unknown as number),
       reading_type: (entry?.reading_type as ReadingType) ?? "BB",
-      date_time: entry ? format(new Date(entry.date_time), "yyyy-MM-dd'T'HH:mm") : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+      date_time: entry
+        ? format(new Date(entry.date_time), "yyyy-MM-dd'T'HH:mm")
+        : format(new Date(), "yyyy-MM-dd'T'HH:mm"),
       food: entry?.food ?? "",
       notes: entry?.notes ?? "",
       insulin_all_day: entry?.symptoms ?? "",
@@ -64,10 +88,14 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
         symptoms: data.insulin_all_day || null,
       };
       const res = entry
-        ? await supabase.from("glucose_entries").update(payload).eq("id", entry.id).eq("user_id", user.id)
+        ? await supabase
+            .from("glucose_entries")
+            .update(payload)
+            .eq("id", entry.id)
+            .eq("user_id", user.id)
         : await supabase.from("glucose_entries").insert(payload);
       if (res.error) throw res.error;
-      
+
       // If it's a new reading, send alert
       if (!entry) {
         console.log("[GLUCOSE_DIALOG] Fetching profile for alert...");
@@ -103,22 +131,39 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle className="text-xl">{entry ? "Edit Glucose Reading" : "Add Glucose Reading"}</DialogTitle>
+          <DialogTitle className="text-xl">
+            {entry ? "Edit Glucose Reading" : "Add Glucose Reading"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="glucose">Glucose (mg/dL)</Label>
-              <Input id="glucose" type="number" inputMode="numeric" step="1" {...form.register("glucose")} />
-              {form.formState.errors.glucose && <p className="text-xs text-destructive">{form.formState.errors.glucose.message}</p>}
+              <Input
+                id="glucose"
+                type="number"
+                inputMode="numeric"
+                step="1"
+                {...form.register("glucose")}
+              />
+              {form.formState.errors.glucose && (
+                <p className="text-xs text-destructive">{form.formState.errors.glucose.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Reading type</Label>
-              <Select value={form.watch("reading_type")} onValueChange={(v) => form.setValue("reading_type", v as ReadingType)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={form.watch("reading_type")}
+                onValueChange={(v) => form.setValue("reading_type", v as ReadingType)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {READING_TYPES.map((t) => (
-                    <SelectItem key={t} value={t}>{t} — {READING_LABELS[t]}</SelectItem>
+                    <SelectItem key={t} value={t}>
+                      {t} — {READING_LABELS[t]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -127,7 +172,15 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
 
           <div className="space-y-1.5">
             <Label htmlFor="date_time">Date & time</Label>
-            <Input id="date_time" type="datetime-local" {...form.register("date_time")} />
+            <Input
+              id="date_time"
+              type="datetime-local"
+              max={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+              {...form.register("date_time")}
+            />
+            {form.formState.errors.date_time && (
+              <p className="text-xs text-destructive">{form.formState.errors.date_time.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -137,7 +190,11 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
 
           <div className="space-y-1.5">
             <Label htmlFor="insulin_all_day">All-day Insulin (units/type)</Label>
-            <Input id="insulin_all_day" placeholder="e.g. 20u Lantus" {...form.register("insulin_all_day")} />
+            <Input
+              id="insulin_all_day"
+              placeholder="e.g. 20u Lantus"
+              {...form.register("insulin_all_day")}
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -146,8 +203,12 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save reading"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save reading"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

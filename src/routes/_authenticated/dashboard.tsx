@@ -1,8 +1,25 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { Activity, Droplet, Syringe, Scale, Plus, TrendingUp, AlertCircle, Clock } from "lucide-react";
+import {
+  Activity,
+  Droplet,
+  Syringe,
+  Scale,
+  Plus,
+  TrendingUp,
+  AlertCircle,
+  Clock,
+} from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
-import { LineChart, Line, ResponsiveContainer, XAxis, YAxis, Tooltip, ReferenceArea } from "recharts";
+import {
+  LineChart,
+  Line,
+  ResponsiveContainer,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ReferenceArea,
+} from "recharts";
 import { supabase } from "@/db/client";
 import { healthService } from "@/backend/services/healthService";
 import { useAuth } from "@/frontend/lib/auth-context";
@@ -11,7 +28,13 @@ import { GlucoseDialog } from "@/frontend/components/glucose-dialog";
 import { InsulinDialog } from "@/frontend/components/insulin-dialog";
 import { WeightDialog } from "@/frontend/components/weight-dialog";
 import { ProfileDialog } from "@/frontend/components/profile-dialog";
-import { READING_LABELS, glucoseStatus, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/frontend/lib/types";
+import {
+  READING_LABELS,
+  glucoseStatus,
+  type GlucoseEntry,
+  type InsulinEntry,
+  type WeightEntry,
+} from "@/frontend/lib/types";
 import { Settings } from "lucide-react";
 import { cn } from "@/frontend/lib/utils";
 
@@ -55,19 +78,29 @@ function DashboardPage() {
   const latest = glucose[0];
   const weekAgo = subDays(new Date(), 7);
   const weekReadings = glucose.filter((g) => isAfter(new Date(g.date_time), weekAgo));
-  const avgWeek = weekReadings.length ? Math.round(weekReadings.reduce((s, r) => s + Number(r.glucose), 0) / weekReadings.length) : 0;
+  const avgWeek = weekReadings.length
+    ? Math.round(weekReadings.reduce((s, r) => s + Number(r.glucose), 0) / weekReadings.length)
+    : 0;
   const latestWeight = weight[0];
   const latestInsulin = insulin[0];
-  const insulinFmt = latestInsulin ? `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.evening}-${latestInsulin.night}` : "—";
-  const insulinTotal = latestInsulin ? Number(latestInsulin.morning) + Number(latestInsulin.lunch) + Number(latestInsulin.evening) + Number(latestInsulin.night) : 0;
+  const insulinFmt = latestInsulin
+    ? `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.evening}-${latestInsulin.night}`
+    : "—";
+  const insulinTotal = latestInsulin
+    ? Number(latestInsulin.morning) +
+      Number(latestInsulin.lunch) +
+      Number(latestInsulin.evening) +
+      Number(latestInsulin.night)
+    : 0;
 
   const chartData = useMemo(
-    () => [...weekReadings].reverse().map((r) => ({
-      time: format(new Date(r.date_time), "MM/dd HH:mm"),
-      glucose: Number(r.glucose),
-      type: r.reading_type,
-    })),
-    [weekReadings]
+    () =>
+      [...weekReadings].reverse().map((r) => ({
+        time: format(new Date(r.date_time), "MM/dd HH:mm"),
+        glucose: Number(r.glucose),
+        type: r.reading_type,
+      })),
+    [weekReadings],
   );
 
   const greeting = (() => {
@@ -83,7 +116,9 @@ function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{greeting},</p>
-          <h1 className="font-display text-3xl font-bold sm:text-4xl">{profileName || "there"} 👋</h1>
+          <h1 className="font-display text-3xl font-bold sm:text-4xl">
+            {profileName || "there"} 👋
+          </h1>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={() => setGlucoseOpen(true)} size="lg" className="shadow-soft">
@@ -108,7 +143,11 @@ function DashboardPage() {
           label="Latest glucose"
           value={latest ? `${Math.round(Number(latest.glucose))}` : "—"}
           unit={latest ? "mg/dL" : ""}
-          sub={latest ? `${latest.reading_type} · ${format(new Date(latest.date_time), "MMM d, HH:mm")}` : "No reading yet"}
+          sub={
+            latest
+              ? `${latest.reading_type} · ${format(new Date(latest.date_time), "MMM d, HH:mm")}`
+              : "No reading yet"
+          }
           accent={latest ? glucoseStatus(Number(latest.glucose), latest.reading_type) : "normal"}
         />
         <StatCard
@@ -123,7 +162,11 @@ function DashboardPage() {
           label="Latest insulin"
           value={insulinFmt}
           unit=""
-          sub={latestInsulin ? `Total: ${insulinTotal} units · ${format(new Date(latestInsulin.entry_date), "MMM d")}` : "No data"}
+          sub={
+            latestInsulin
+              ? `Total: ${insulinTotal} units · ${format(new Date(latestInsulin.entry_date), "MMM d")}`
+              : "No data"
+          }
         />
         <StatCard
           icon={<Scale className="h-5 w-5" />}
@@ -148,7 +191,12 @@ function DashboardPage() {
               <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <ReferenceArea y1={70} y2={180} fill="oklch(0.62 0.15 155)" fillOpacity={0.08} />
                 <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11 }} tickLine={false} axisLine={false} domain={[40, "auto"]} />
+                <YAxis
+                  tick={{ fontSize: 11 }}
+                  tickLine={false}
+                  axisLine={false}
+                  domain={[40, "auto"]}
+                />
                 <Tooltip
                   contentStyle={{
                     background: "var(--popover)",
@@ -157,20 +205,42 @@ function DashboardPage() {
                     fontSize: 12,
                   }}
                 />
-                <Line type="monotone" dataKey="glucose" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3, fill: "var(--primary)" }} activeDot={{ r: 5 }} />
+                <Line
+                  type="monotone"
+                  dataKey="glucose"
+                  stroke="var(--primary)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3, fill: "var(--primary)" }}
+                  activeDot={{ r: 5 }}
+                />
               </LineChart>
             </ResponsiveContainer>
           </div>
         ) : (
-          <EmptyHint icon={<Activity className="h-6 w-6" />} text="Log a few readings to see your trend." />
+          <EmptyHint
+            icon={<Activity className="h-6 w-6" />}
+            text="Log a few readings to see your trend."
+          />
         )}
       </div>
 
       {/* Reminders */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <ReminderCard icon={<Clock className="h-4 w-4" />} title="Check glucose" body="Aim for 4–7 readings spread through the day." />
-        <ReminderCard icon={<Syringe className="h-4 w-4" />} title="Insulin doses" body="Don't forget to log your insulin schedule daily." />
-        <ReminderCard icon={<AlertCircle className="h-4 w-4" />} title="Stay hydrated" body="Drink water regularly — it helps glucose control." />
+        <ReminderCard
+          icon={<Clock className="h-4 w-4" />}
+          title="Check glucose"
+          body="Aim for 4–7 readings spread through the day."
+        />
+        <ReminderCard
+          icon={<Syringe className="h-4 w-4" />}
+          title="Insulin doses"
+          body="Don't forget to log your insulin schedule daily."
+        />
+        <ReminderCard
+          icon={<AlertCircle className="h-4 w-4" />}
+          title="Stay hydrated"
+          body="Drink water regularly — it helps glucose control."
+        />
       </div>
 
       <GlucoseDialog open={glucoseOpen} onOpenChange={setGlucoseOpen} onSaved={load} />
@@ -182,18 +252,38 @@ function DashboardPage() {
 }
 
 function StatCard({
-  icon, label, value, unit, sub, accent = "normal",
-}: { icon: React.ReactNode; label: string; value: string; unit: string; sub: string; accent?: "low" | "normal" | "high" }) {
+  icon,
+  label,
+  value,
+  unit,
+  sub,
+  accent = "normal",
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  unit: string;
+  sub: string;
+  accent?: "low" | "normal" | "high";
+}) {
   const accentClass =
     accent === "low" ? "text-warning" : accent === "high" ? "text-destructive" : "text-foreground";
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
       <div className="flex items-center justify-between">
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary">{icon}</div>
+        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </div>
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary">
+          {icon}
+        </div>
       </div>
       <div className="mt-3 flex items-baseline gap-1">
-        <div className={cn("font-display text-2xl font-bold sm:text-3xl tracking-tight", accentClass)}>{value}</div>
+        <div
+          className={cn("font-display text-2xl font-bold sm:text-3xl tracking-tight", accentClass)}
+        >
+          {value}
+        </div>
         {unit && <div className="text-sm font-medium text-muted-foreground">{unit}</div>}
       </div>
       <div className="mt-1 truncate text-xs text-muted-foreground">{sub}</div>
@@ -201,7 +291,15 @@ function StatCard({
   );
 }
 
-function ReminderCard({ icon, title, body }: { icon: React.ReactNode; title: string; body: string }) {
+function ReminderCard({
+  icon,
+  title,
+  body,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center gap-2 text-primary">

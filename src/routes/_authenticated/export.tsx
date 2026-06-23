@@ -11,7 +11,13 @@ import { useAuth } from "@/frontend/lib/auth-context";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
-import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry, type ReadingType } from "@/frontend/lib/types";
+import {
+  READING_TYPES,
+  type GlucoseEntry,
+  type InsulinEntry,
+  type WeightEntry,
+  type ReadingType,
+} from "@/frontend/lib/types";
 
 export const Route = createFileRoute("/_authenticated/export")({
   component: ExportPage,
@@ -20,21 +26,50 @@ export const Route = createFileRoute("/_authenticated/export")({
 
 interface DailyRow {
   date: string;
-  BB: number | ""; AB: number | ""; BL: number | ""; AL: number | "";
-  BD: number | ""; AD: number | ""; BT: number | ""; Fasting: number | "";
-  insulinM: number | ""; insulinL: number | ""; insulinE: number | ""; insulinN: number | "";
-  totalInsulin: number | ""; weight: number | ""; notes: string;
+  BB: number | "";
+  AB: number | "";
+  BL: number | "";
+  AL: number | "";
+  BD: number | "";
+  AD: number | "";
+  BT: number | "";
+  Fasting: number | "";
+  insulinM: number | "";
+  insulinL: number | "";
+  insulinE: number | "";
+  insulinN: number | "";
+  totalInsulin: number | "";
+  weight: number | "";
+  notes: string;
 }
 
 async function fetchAll(from: string, to: string) {
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
   const fromIso = new Date(from).toISOString();
   const toIso = new Date(`${to}T23:59:59`).toISOString();
   const [g, i, w, p] = await Promise.all([
-    supabase.from("glucose_entries").select("*").eq("user_id", user.id).gte("date_time", fromIso).lte("date_time", toIso).order("date_time"),
-    supabase.from("insulin_entries").select("*").eq("user_id", user.id).gte("entry_date", from).lte("entry_date", to),
-    supabase.from("weight_entries").select("*").eq("user_id", user.id).gte("entry_date", from).lte("entry_date", to),
+    supabase
+      .from("glucose_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("date_time", fromIso)
+      .lte("date_time", toIso)
+      .order("date_time"),
+    supabase
+      .from("insulin_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("entry_date", from)
+      .lte("entry_date", to),
+    supabase
+      .from("weight_entries")
+      .select("*")
+      .eq("user_id", user.id)
+      .gte("entry_date", from)
+      .lte("entry_date", to),
     supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
   ]);
   return {
@@ -45,13 +80,33 @@ async function fetchAll(from: string, to: string) {
   };
 }
 
-function buildDailyRows(from: string, to: string, g: GlucoseEntry[], i: InsulinEntry[], w: WeightEntry[]): DailyRow[] {
+function buildDailyRows(
+  from: string,
+  to: string,
+  g: GlucoseEntry[],
+  i: InsulinEntry[],
+  w: WeightEntry[],
+): DailyRow[] {
   const map = new Map<string, DailyRow>();
   const ensure = (d: string): DailyRow => {
     if (!map.has(d)) {
       map.set(d, {
-        date: d, BB: "", AB: "", BL: "", AL: "", BD: "", AD: "", BT: "", Fasting: "",
-        insulinM: "", insulinL: "", insulinE: "", insulinN: "", totalInsulin: "", weight: "", notes: "",
+        date: d,
+        BB: "",
+        AB: "",
+        BL: "",
+        AL: "",
+        BD: "",
+        AD: "",
+        BT: "",
+        Fasting: "",
+        insulinM: "",
+        insulinL: "",
+        insulinE: "",
+        insulinN: "",
+        totalInsulin: "",
+        weight: "",
+        notes: "",
       });
     }
     return map.get(d)!;
@@ -80,7 +135,8 @@ function buildDailyRows(from: string, to: string, g: GlucoseEntry[], i: InsulinE
     row.insulinL = Number(entry.lunch);
     row.insulinE = Number(entry.evening);
     row.insulinN = Number(entry.night);
-    row.totalInsulin = Number(entry.morning) + Number(entry.lunch) + Number(entry.evening) + Number(entry.night);
+    row.totalInsulin =
+      Number(entry.morning) + Number(entry.lunch) + Number(entry.evening) + Number(entry.night);
   });
 
   w.forEach((entry) => {
@@ -104,12 +160,31 @@ function ExportPage() {
       const { glucose, insulin, weight, profile } = await fetchAll(from, to);
       const rows = buildDailyRows(from, to, glucose, insulin, weight);
       const data = rows.map((r) => ({
-        Date: r.date, BB: r.BB, AB: r.AB, BL: r.BL, AL: r.AL, BD: r.BD, AD: r.AD, BT: r.BT, Fasting: r.Fasting,
-        "Insulin M": r.insulinM, "Insulin L": r.insulinL, "Insulin E": r.insulinE, "Insulin N": r.insulinN,
-        "Total Insulin": r.totalInsulin, "Weight (kg)": r.weight, Notes: r.notes,
+        Date: r.date,
+        BB: r.BB,
+        AB: r.AB,
+        BL: r.BL,
+        AL: r.AL,
+        BD: r.BD,
+        AD: r.AD,
+        BT: r.BT,
+        Fasting: r.Fasting,
+        "Insulin M": r.insulinM,
+        "Insulin L": r.insulinL,
+        "Insulin E": r.insulinE,
+        "Insulin N": r.insulinN,
+        "Total Insulin": r.totalInsulin,
+        "Weight (kg)": r.weight,
+        Notes: r.notes,
       }));
       const ws = XLSX.utils.json_to_sheet(data);
-      ws["!cols"] = [{ wch: 12 }, ...Array(8).fill({ wch: 7 }), ...Array(5).fill({ wch: 10 }), { wch: 12 }, { wch: 30 }];
+      ws["!cols"] = [
+        { wch: 12 },
+        ...Array(8).fill({ wch: 7 }),
+        ...Array(5).fill({ wch: 10 }),
+        { wch: 12 },
+        { wch: 30 },
+      ];
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Daily Log");
       const fname = `${(profile?.name || "patient").replace(/\s+/g, "_")}_${from}_to_${to}.xlsx`;
@@ -117,7 +192,9 @@ function ExportPage() {
       toast.success("Excel file downloaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
-    } finally { setBusy(null); }
+    } finally {
+      setBusy(null);
+    }
   };
 
   const exportPdf = async () => {
@@ -159,8 +236,21 @@ function ExportPage() {
         startY: 220,
         head: [["Date", ...READING_TYPES, "Ins M", "Ins L", "Ins E", "Ins N", "Total", "Weight"]],
         body: rows.map((r) => [
-          r.date, r.BB, r.AB, r.BL, r.AL, r.BD, r.AD, r.BT, r.Fasting,
-          r.insulinM, r.insulinL, r.insulinE, r.insulinN, r.totalInsulin, r.weight,
+          r.date,
+          r.BB,
+          r.AB,
+          r.BL,
+          r.AL,
+          r.BD,
+          r.AD,
+          r.BT,
+          r.Fasting,
+          r.insulinM,
+          r.insulinL,
+          r.insulinE,
+          r.insulinN,
+          r.totalInsulin,
+          r.weight,
         ]),
         styles: { fontSize: 8, cellPadding: 3 },
         headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: "bold" },
@@ -172,36 +262,40 @@ function ExportPage() {
       toast.success("PDF report downloaded");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
-    } finally { setBusy(null); }
+    } finally {
+      setBusy(null);
+    }
   };
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-bold">Export</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Download your data as Excel or PDF doctor report.</p>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Download your data as Excel or PDF doctor report.
+        </p>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="from">From</Label>
-            <Input 
-              id="from" 
-              type="date" 
-              value={from} 
+            <Input
+              id="from"
+              type="date"
+              value={from}
               max={to}
-              onChange={(e) => setFrom(e.target.value)} 
+              onChange={(e) => setFrom(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="to">To</Label>
-            <Input 
-              id="to" 
-              type="date" 
-              value={to} 
+            <Input
+              id="to"
+              type="date"
+              value={to}
               min={from}
-              onChange={(e) => setTo(e.target.value)} 
+              onChange={(e) => setTo(e.target.value)}
             />
           </div>
         </div>
@@ -217,7 +311,17 @@ function ExportPage() {
             One row per day with all glucose slots, insulin doses, weight and notes.
           </p>
           <Button onClick={exportXlsx} disabled={busy !== null} className="mt-4 w-full" size="lg">
-            {busy === "xlsx" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Building...</> : <><Download className="mr-2 h-4 w-4" />Download .xlsx</>}
+            {busy === "xlsx" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Building...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download .xlsx
+              </>
+            )}
           </Button>
         </div>
 
@@ -229,8 +333,24 @@ function ExportPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Formatted report with summary stats and a full daily table — ready to email or print.
           </p>
-          <Button onClick={exportPdf} disabled={busy !== null} className="mt-4 w-full" size="lg" variant="secondary">
-            {busy === "pdf" ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Building...</> : <><Download className="mr-2 h-4 w-4" />Download .pdf</>}
+          <Button
+            onClick={exportPdf}
+            disabled={busy !== null}
+            className="mt-4 w-full"
+            size="lg"
+            variant="secondary"
+          >
+            {busy === "pdf" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Building...
+              </>
+            ) : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Download .pdf
+              </>
+            )}
           </Button>
         </div>
       </div>

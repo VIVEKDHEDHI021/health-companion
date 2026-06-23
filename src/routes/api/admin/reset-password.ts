@@ -1,7 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { supabaseAdmin } from '@/db/client.server';
+import { createFileRoute } from "@tanstack/react-router";
+import { supabaseAdmin } from "@/db/client.server";
 
-export const Route = createFileRoute('/api/admin/reset-password')({
+export const Route = createFileRoute("/api/admin/reset-password")({
   server: {
     handlers: {
       POST: async ({ request }) => {
@@ -9,20 +9,20 @@ export const Route = createFileRoute('/api/admin/reset-password')({
           // --- STEP 1: Verify Authorization securely on the server ---
           // Check for a secure admin API key header to prevent unauthorized access.
           // We check if the custom header matches our server-side service role key.
-          const authKey = request.headers.get('x-admin-api-key');
+          const authKey = request.headers.get("x-admin-api-key");
           const expectedKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
           if (!expectedKey) {
             return Response.json(
-              { error: 'Server configuration error: Admin key is not configured.' },
-              { status: 500 }
+              { error: "Server configuration error: Admin key is not configured." },
+              { status: 500 },
             );
           }
 
           if (!authKey || authKey !== expectedKey) {
             return Response.json(
-              { error: 'Unauthorized: Invalid or missing admin API key.' },
-              { status: 401 }
+              { error: "Unauthorized: Invalid or missing admin API key." },
+              { status: 401 },
             );
           }
 
@@ -31,8 +31,8 @@ export const Route = createFileRoute('/api/admin/reset-password')({
 
           if (!userId || !newPassword) {
             return Response.json(
-              { error: 'Bad Request: Both userId and newPassword are required.' },
-              { status: 400 }
+              { error: "Bad Request: Both userId and newPassword are required." },
+              { status: 400 },
             );
           }
 
@@ -46,13 +46,13 @@ export const Route = createFileRoute('/api/admin/reset-password')({
           if (error) {
             return Response.json(
               { error: `Supabase Admin Error: ${error.message}` },
-              { status: error.status || 500 }
+              { status: error.status || 500 },
             );
           }
 
           return Response.json({
             success: true,
-            message: 'User password updated successfully.',
+            message: "User password updated successfully.",
             user: {
               email: data.user.email,
               updatedAt: data.user.updated_at,
@@ -60,8 +60,8 @@ export const Route = createFileRoute('/api/admin/reset-password')({
           });
         } catch (e) {
           return Response.json(
-            { error: e instanceof Error ? e.message : 'Internal Server Error' },
-            { status: 500 }
+            { error: e instanceof Error ? e.message : "Internal Server Error" },
+            { status: 500 },
           );
         }
       },

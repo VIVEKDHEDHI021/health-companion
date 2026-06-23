@@ -1,11 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { format, subDays } from "date-fns";
-import { ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts";
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { supabase } from "@/db/client";
 import { useAuth } from "@/frontend/lib/auth-context";
-import { READING_TYPES, type GlucoseEntry, type InsulinEntry, type WeightEntry } from "@/frontend/lib/types";
+import {
+  READING_TYPES,
+  type GlucoseEntry,
+  type InsulinEntry,
+  type WeightEntry,
+} from "@/frontend/lib/types";
 
 export const Route = createFileRoute("/_authenticated/reports")({
   component: ReportsPage,
@@ -27,14 +42,31 @@ function ReportsPage() {
       return;
     }
     (async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const {
+        data: { user: currentUser },
+      } = await supabase.auth.getUser();
       if (!currentUser) return;
       const sinceIso = subDays(new Date(), days).toISOString();
       const sinceDate = format(subDays(new Date(), days), "yyyy-MM-dd");
       const [g, i, w] = await Promise.all([
-        supabase.from("glucose_entries").select("*").eq("user_id", currentUser.id).gte("date_time", sinceIso).order("date_time"),
-        supabase.from("insulin_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", sinceDate).order("entry_date"),
-        supabase.from("weight_entries").select("*").eq("user_id", currentUser.id).gte("entry_date", sinceDate).order("entry_date"),
+        supabase
+          .from("glucose_entries")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .gte("date_time", sinceIso)
+          .order("date_time"),
+        supabase
+          .from("insulin_entries")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .gte("entry_date", sinceDate)
+          .order("entry_date"),
+        supabase
+          .from("weight_entries")
+          .select("*")
+          .eq("user_id", currentUser.id)
+          .gte("entry_date", sinceDate)
+          .order("entry_date"),
       ]);
       if (g.data) setGlucose(g.data as GlucoseEntry[]);
       if (i.data) setInsulin(i.data as InsulinEntry[]);
@@ -59,14 +91,19 @@ function ReportsPage() {
       map.get(d)!.push(Number(g.glucose));
     });
     return Array.from(map.entries()).map(([date, vals]) => ({
-      date, avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
+      date,
+      avg: Math.round(vals.reduce((a, b) => a + b, 0) / vals.length),
     }));
   }, [glucose]);
 
   const slotAvg = useMemo(() => {
     return READING_TYPES.map((t) => {
       const vals = glucose.filter((g) => g.reading_type === t).map((g) => Number(g.glucose));
-      return { type: t, avg: vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0, count: vals.length };
+      return {
+        type: t,
+        avg: vals.length ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : 0,
+        count: vals.length,
+      };
     }).filter((s) => s.count > 0);
   }, [glucose]);
 
@@ -75,7 +112,10 @@ function ReportsPage() {
     total: Number(i.morning) + Number(i.lunch) + Number(i.evening) + Number(i.night),
   }));
 
-  const weightTrend = weight.map((w) => ({ date: format(new Date(w.entry_date), "MM/dd"), kg: Number(w.weight_kg) }));
+  const weightTrend = weight.map((w) => ({
+    date: format(new Date(w.entry_date), "MM/dd"),
+    kg: Number(w.weight_kg),
+  }));
 
   return (
     <div className="space-y-6">
@@ -90,7 +130,9 @@ function ReportsPage() {
               key={d}
               onClick={() => setDays(d)}
               className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition ${
-                days === d ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-muted/70"
+                days === d
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground hover:bg-muted/70"
               }`}
             >
               {d}d
@@ -101,10 +143,32 @@ function ReportsPage() {
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KPI label="Average" value={stats ? `${stats.avg}` : "—"} unit="mg/dL" icon={<Activity className="h-4 w-4" />} />
-        <KPI label="Highest" value={stats ? `${Math.round(Number(stats.high.glucose))}` : "—"} unit="mg/dL" sub={stats && format(new Date(stats.high.date_time), "MMM d HH:mm")} icon={<TrendingUp className="h-4 w-4 text-destructive" />} />
-        <KPI label="Lowest" value={stats ? `${Math.round(Number(stats.low.glucose))}` : "—"} unit="mg/dL" sub={stats && format(new Date(stats.low.date_time), "MMM d HH:mm")} icon={<TrendingDown className="h-4 w-4 text-warning" />} />
-        <KPI label="Readings" value={stats ? `${stats.count}` : "0"} unit="logs" icon={<Activity className="h-4 w-4" />} />
+        <KPI
+          label="Average"
+          value={stats ? `${stats.avg}` : "—"}
+          unit="mg/dL"
+          icon={<Activity className="h-4 w-4" />}
+        />
+        <KPI
+          label="Highest"
+          value={stats ? `${Math.round(Number(stats.high.glucose))}` : "—"}
+          unit="mg/dL"
+          sub={stats && format(new Date(stats.high.date_time), "MMM d HH:mm")}
+          icon={<TrendingUp className="h-4 w-4 text-destructive" />}
+        />
+        <KPI
+          label="Lowest"
+          value={stats ? `${Math.round(Number(stats.low.glucose))}` : "—"}
+          unit="mg/dL"
+          sub={stats && format(new Date(stats.low.date_time), "MMM d HH:mm")}
+          icon={<TrendingDown className="h-4 w-4 text-warning" />}
+        />
+        <KPI
+          label="Readings"
+          value={stats ? `${stats.count}` : "0"}
+          unit="logs"
+          icon={<Activity className="h-4 w-4" />}
+        />
       </div>
 
       <ChartCard title="Daily glucose average">
@@ -114,11 +178,25 @@ function ReportsPage() {
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12 }} />
-              <Line type="monotone" dataKey="avg" stroke="var(--primary)" strokeWidth={2.5} dot={{ r: 3 }} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="avg"
+                stroke="var(--primary)"
+                strokeWidth={2.5}
+                dot={{ r: 3 }}
+              />
             </LineChart>
           </ResponsiveContainer>
-        ) : <Empty />}
+        ) : (
+          <Empty />
+        )}
       </ChartCard>
 
       <ChartCard title="Average by time slot">
@@ -128,11 +206,19 @@ function ReportsPage() {
               <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
               <XAxis dataKey="type" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12 }} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--popover)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 12,
+                }}
+              />
               <Bar dataKey="avg" fill="var(--primary)" radius={[8, 8, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        ) : <Empty />}
+        ) : (
+          <Empty />
+        )}
       </ChartCard>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -143,11 +229,19 @@ function ReportsPage() {
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                  }}
+                />
                 <Bar dataKey="total" fill="var(--chart-2)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          ) : <Empty />}
+          ) : (
+            <Empty />
+          )}
         </ChartCard>
 
         <ChartCard title="Weight trend">
@@ -157,22 +251,50 @@ function ReportsPage() {
                 <CartesianGrid stroke="var(--border)" strokeDasharray="3 3" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} domain={["auto", "auto"]} />
-                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12 }} />
-                <Line type="monotone" dataKey="kg" stroke="var(--chart-3)" strokeWidth={2.5} dot={{ r: 3 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 12,
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="kg"
+                  stroke="var(--chart-3)"
+                  strokeWidth={2.5}
+                  dot={{ r: 3 }}
+                />
               </LineChart>
             </ResponsiveContainer>
-          ) : <Empty />}
+          ) : (
+            <Empty />
+          )}
         </ChartCard>
       </div>
     </div>
   );
 }
 
-function KPI({ label, value, unit, sub, icon }: { label: string; value: string; unit: string; sub?: string | false | null; icon: React.ReactNode }) {
+function KPI({
+  label,
+  value,
+  unit,
+  sub,
+  icon,
+}: {
+  label: string;
+  value: string;
+  unit: string;
+  sub?: string | false | null;
+  icon: React.ReactNode;
+}) {
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</span>
+        <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
         {icon}
       </div>
       <div className="mt-2 flex items-baseline gap-1">
@@ -194,5 +316,9 @@ function ChartCard({ title, children }: { title: string; children: React.ReactNo
 }
 
 function Empty() {
-  return <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">No data yet</div>;
+  return (
+    <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+      No data yet
+    </div>
+  );
 }
