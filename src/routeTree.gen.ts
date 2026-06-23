@@ -15,6 +15,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiSendPushRouteImport } from './routes/api/send-push'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExportRouteImport } from './routes/_authenticated/export'
@@ -48,6 +49,11 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSendPushRoute = ApiSendPushRouteImport.update({
+  id: '/api/send-push',
+  path: '/api/send-push',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
@@ -86,6 +92,7 @@ export interface FileRoutesByFullPath {
   '/export': typeof AuthenticatedExportRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +105,7 @@ export interface FileRoutesByTo {
   '/export': typeof AuthenticatedExportRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRoutesById {
@@ -112,6 +120,7 @@ export interface FileRoutesById {
   '/_authenticated/export': typeof AuthenticatedExportRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +135,7 @@ export interface FileRouteTypes {
     | '/export'
     | '/history'
     | '/reports'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +148,7 @@ export interface FileRouteTypes {
     | '/export'
     | '/history'
     | '/reports'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   id:
     | '__root__'
@@ -151,6 +162,7 @@ export interface FileRouteTypes {
     | '/_authenticated/export'
     | '/_authenticated/history'
     | '/_authenticated/reports'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiSendPushRoute: typeof ApiSendPushRoute
   ApiAdminResetPasswordRoute: typeof ApiAdminResetPasswordRoute
 }
 
@@ -206,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/send-push': {
+      id: '/api/send-push'
+      path: '/api/send-push'
+      fullPath: '/api/send-push'
+      preLoaderRoute: typeof ApiSendPushRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/reports': {
@@ -271,6 +291,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiSendPushRoute: ApiSendPushRoute,
   ApiAdminResetPasswordRoute: ApiAdminResetPasswordRoute,
 }
 export const routeTree = rootRouteImport

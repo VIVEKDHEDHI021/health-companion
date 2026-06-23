@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/db/client";
 import { useAuth } from "@/frontend/lib/auth-context";
-import { showLocalNotification } from "../../services/notificationService";
+import { showLocalNotification, triggerPushNotification } from "../../services/notificationService";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
@@ -72,6 +72,13 @@ export function WeightDialog({
       showLocalNotification(
         "Weight Entry Logged",
         `Logged weight: ${data.weight_kg} kg for ${data.entry_date}.`,
+      );
+
+      // Trigger background push notification to all user's registered devices
+      triggerPushNotification(
+        user.id,
+        "Weight Entry Logged",
+        `Weight: ${data.weight_kg} kg was logged for ${data.entry_date}.`,
       );
 
       onOpenChange(false);

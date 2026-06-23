@@ -112,3 +112,24 @@ export function showLocalNotification(title: string, body: string) {
     );
   }
 }
+
+export async function triggerPushNotification(userId: string, title: string, body: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const res = await fetch("/api/send-push", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ userId, title, body }),
+    });
+    if (!res.ok) {
+      const errData = await res.json();
+      console.warn("Failed to trigger background push notification:", errData);
+    } else {
+      console.log("Successfully triggered background push notification call.");
+    }
+  } catch (err) {
+    console.error("Error triggering background push notification:", err);
+  }
+}

@@ -8,7 +8,7 @@ import { supabase } from "@/db/client";
 import { healthService } from "@/backend/services/healthService";
 import { useAuth } from "@/frontend/lib/auth-context";
 import { messagingService } from "@/frontend/lib/messaging";
-import { showLocalNotification } from "../../services/notificationService";
+import { showLocalNotification, triggerPushNotification } from "../../services/notificationService";
 import {
   READING_TYPES,
   READING_LABELS,
@@ -121,6 +121,13 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
         showLocalNotification(
           "New Glucose Reading",
           `Logged glucose: ${data.glucose} mg/dL (${data.reading_type})`,
+        );
+
+        // Trigger background push notification to all user's registered devices
+        triggerPushNotification(
+          user.id,
+          "New Glucose Reading",
+          `Glucose: ${data.glucose} mg/dL (${data.reading_type}) was logged.`,
         );
       }
 
