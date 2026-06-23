@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef } from "react";
 import { useNotifications } from "../hooks/useNotifications";
 import { useAuth } from "@/frontend/lib/auth-context";
+import { supabase } from "@/db/client";
 
 interface NotificationContextType {
   token: string | null;
@@ -20,7 +21,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     // Only request permission/register token once when the user is logged in
     if (user && !initializedRef.current && typeof window !== "undefined") {
       initializedRef.current = true;
-      notifications.initNotifications();
+      notifications.initNotifications().then(async (token) => {
+        if (token) {
+          console.log("[NotificationProvider] Saving FCM web token to database...");
+          const { error } = await supabase.from("push_tokens").upsert(
+            {
+              user_id: user.id,
+              token: token,
+              platform: "web",
+              device_name: navigator.userAgent.substring(0, 100),
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: "user_id,token" },
+          );
+          if (error) {
+            console.error("[NotificationProvider] Error saving web FCM token:", error);
+          } else {
+            console.log(
+              "[NotificationProvider] Web FCM token successfully registered in database.",
+            );
+          }
+        }
+      });
     }
   }, [user, notifications]);
 

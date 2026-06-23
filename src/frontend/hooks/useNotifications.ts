@@ -57,6 +57,22 @@ export function useNotifications() {
             toast.info(title, {
               description: body,
             });
+
+            // Show real desktop notification if permission is granted
+            if (
+              typeof window !== "undefined" &&
+              "Notification" in window &&
+              Notification.permission === "granted"
+            ) {
+              try {
+                new Notification(title, {
+                  body: body,
+                  icon: "/logo.png",
+                });
+              } catch (e) {
+                console.error("Failed to show desktop notification:", e);
+              }
+            }
           }
         },
       )
