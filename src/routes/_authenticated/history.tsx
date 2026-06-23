@@ -19,12 +19,29 @@ export const Route = createFileRoute("/_authenticated/history")({
 
 function HistoryPage() {
   const { user } = useAuth();
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const [entries, setEntries] = useState<GlucoseEntry[]>([]);
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [editing, setEditing] = useState<GlucoseEntry | null>(null);
   const [open, setOpen] = useState(false);
+
+  const handleFromChange = (val: string) => {
+    if (val > todayStr) {
+      setFrom(todayStr);
+    } else {
+      setFrom(val);
+    }
+  };
+
+  const handleToChange = (val: string) => {
+    if (val > todayStr) {
+      setTo(todayStr);
+    } else {
+      setTo(val);
+    }
+  };
 
   const load = async () => {
     const {
@@ -104,13 +121,16 @@ function HistoryPage() {
         <Input
           type="date"
           value={from}
-          onChange={(e) => setFrom(e.target.value)}
+          max={to || todayStr}
+          onChange={(e) => handleFromChange(e.target.value)}
           aria-label="From date"
         />
         <Input
           type="date"
           value={to}
-          onChange={(e) => setTo(e.target.value)}
+          min={from}
+          max={todayStr}
+          onChange={(e) => handleToChange(e.target.value)}
           aria-label="To date"
         />
       </div>

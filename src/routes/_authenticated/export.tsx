@@ -149,9 +149,26 @@ function buildDailyRows(
 
 function ExportPage() {
   const { user } = useAuth();
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const [from, setFrom] = useState(format(subDays(new Date(), 30), "yyyy-MM-dd"));
-  const [to, setTo] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [to, setTo] = useState(todayStr);
   const [busy, setBusy] = useState<"xlsx" | "pdf" | null>(null);
+
+  const handleFromChange = (val: string) => {
+    if (val > todayStr) {
+      setFrom(todayStr);
+    } else {
+      setFrom(val);
+    }
+  };
+
+  const handleToChange = (val: string) => {
+    if (val > todayStr) {
+      setTo(todayStr);
+    } else {
+      setTo(val);
+    }
+  };
 
   const exportXlsx = async () => {
     if (!user) return;
@@ -284,8 +301,8 @@ function ExportPage() {
               id="from"
               type="date"
               value={from}
-              max={to}
-              onChange={(e) => setFrom(e.target.value)}
+              max={to || todayStr}
+              onChange={(e) => handleFromChange(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
@@ -295,7 +312,8 @@ function ExportPage() {
               type="date"
               value={to}
               min={from}
-              onChange={(e) => setTo(e.target.value)}
+              max={todayStr}
+              onChange={(e) => handleToChange(e.target.value)}
             />
           </div>
         </div>
