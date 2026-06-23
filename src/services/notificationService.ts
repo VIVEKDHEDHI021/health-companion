@@ -77,3 +77,38 @@ export async function requestNotificationPermission(): Promise<string | null> {
     return null;
   }
 }
+
+export function showLocalNotification(title: string, body: string) {
+  if (typeof window === "undefined" || !("Notification" in window)) return;
+
+  if (Notification.permission === "granted") {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.ready
+        .then((reg) => {
+          reg.showNotification(title, {
+            body: body,
+            icon: "/logo.png",
+          });
+        })
+        .catch((err) => {
+          console.error("Service worker not ready for notification:", err);
+          try {
+            new Notification(title, { body, icon: "/logo.png" });
+          } catch (e) {
+            console.error("Failed to show legacy notification fallback:", e);
+          }
+        });
+    } else {
+      try {
+        new Notification(title, { body, icon: "/logo.png" });
+      } catch (e) {
+        console.error("Failed to show legacy notification:", e);
+      }
+    }
+  } else {
+    console.warn(
+      "[Notification Service] Cannot show notification, permission status:",
+      Notification.permission,
+    );
+  }
+}

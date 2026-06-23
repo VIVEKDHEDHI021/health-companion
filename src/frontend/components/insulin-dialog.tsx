@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/db/client";
 import { useAuth } from "@/frontend/lib/auth-context";
+import { showLocalNotification } from "../../services/notificationService";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
@@ -99,6 +100,13 @@ export function InsulinDialog({
         .upsert({ user_id: user.id, ...data }, { onConflict: "user_id,entry_date" });
       if (error) throw error;
       toast.success("Insulin saved");
+
+      // Show real browser desktop notification
+      showLocalNotification(
+        "Insulin Schedule Logged",
+        `Logged insulin: ${data.morning}-${data.lunch}-${data.evening}-${data.night} units for ${data.entry_date}.`,
+      );
+
       onOpenChange(false);
       onSaved?.();
     } catch (e) {

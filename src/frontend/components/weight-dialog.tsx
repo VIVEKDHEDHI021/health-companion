@@ -6,6 +6,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { supabase } from "@/db/client";
 import { useAuth } from "@/frontend/lib/auth-context";
+import { showLocalNotification } from "../../services/notificationService";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
@@ -66,6 +67,13 @@ export function WeightDialog({
       );
       if (error) throw error;
       toast.success("Weight saved");
+
+      // Show real browser desktop notification
+      showLocalNotification(
+        "Weight Entry Logged",
+        `Logged weight: ${data.weight_kg} kg for ${data.entry_date}.`,
+      );
+
       onOpenChange(false);
       onSaved?.();
     } catch (e) {
