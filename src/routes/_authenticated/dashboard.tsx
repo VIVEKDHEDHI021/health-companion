@@ -37,6 +37,7 @@ import {
 } from "@/frontend/lib/types";
 import { Settings } from "lucide-react";
 import { cn } from "@/frontend/lib/utils";
+import { Tabs, TabsList, TabsTrigger } from "@/frontend/components/ui/tabs";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
@@ -53,6 +54,7 @@ function DashboardPage() {
   const [weightOpen, setWeightOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileName, setProfileName] = useState<string>("");
+  const [days, setDays] = useState<7 | 30 | 90>(7);
 
   const load = async () => {
     if (!user) return;
@@ -93,14 +95,23 @@ function DashboardPage() {
       Number(latestInsulin.night)
     : 0;
 
+  const trendAgo = useMemo(() => subDays(new Date(), days), [days]);
+  const trendReadings = useMemo(() => {
+    return glucose.filter((g) => isAfter(new Date(g.date_time), trendAgo));
+  }, [glucose, trendAgo]);
+
   const chartData = useMemo(
     () =>
-      [...weekReadings].reverse().map((r) => ({
-        time: format(new Date(r.date_time), "MM/dd HH:mm"),
-        glucose: Number(r.glucose),
-        type: r.reading_type,
-      })),
-    [weekReadings],
+      [...trendReadings].reverse().map((r) => {
+        const dateObj = new Date(r.date_time);
+        return {
+          time: format(dateObj, days === 7 ? "MM/dd HH:mm" : "MM/dd"),
+          fullTime: format(dateObj, "MMM d, yyyy HH:mm"),
+          glucose: Number(r.glucose),
+          type: r.reading_type,
+        };
+      }),
+    [trendReadings, days],
   );
 
   const greeting = (() => {
@@ -179,11 +190,18 @@ function DashboardPage() {
 
       {/* Chart */}
       <div className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
-        <div className="mb-4 flex items-center justify-between">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="font-display text-lg font-bold">7-day glucose trend</h2>
+            <h2 className="font-display text-lg font-bold">{days}-day glucose trend</h2>
             <p className="text-xs text-muted-foreground">Target zone: 70–180 mg/dL</p>
           </div>
+          <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
+            <TabsList className="grid w-[240px] grid-cols-3">
+              <TabsTrigger value="7">7 Days</TabsTrigger>
+              <TabsTrigger value="30">30 Days</TabsTrigger>
+              <TabsTrigger value="90">90 Days</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
         {chartData.length > 0 ? (
           <div className="h-64 w-full">
@@ -198,11 +216,26 @@ function DashboardPage() {
                   domain={[40, "auto"]}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 12,
-                    fontSize: 12,
+                  content={({ active, payload }) => {
+                    if (active && payload && payload.length) {
+                      const data = payload[0].payload;
+                      return (
+                        <div className="rounded-xl border border-border bg-popover p-3 shadow-md text-xs space-y-1">
+                          <p className="font-semibold text-foreground">{data.fullTime}</p>
+                          <div className="flex items-center gap-1.5">
+                            <span className="h-2 w-2 rounded-full bg-primary" />
+                            <span className="text-muted-foreground">Glucose:</span>
+                            <span className="font-bold text-foreground">{data.glucose} mg/dL</span>
+                          </div>
+                          {data.type && (
+                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                              Type: {data.type}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+                    return null;
                   }}
                 />
                 <Line

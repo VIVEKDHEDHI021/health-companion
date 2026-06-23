@@ -7,7 +7,7 @@ export const healthService = {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
-    const since = subDays(new Date(), 30).toISOString();
+    const since = subDays(new Date(), 90).toISOString();
     return Promise.all([
       supabase
         .from("glucose_entries")
@@ -19,13 +19,13 @@ export const healthService = {
         .from("insulin_entries")
         .select("*")
         .eq("user_id", user.id)
-        .gte("entry_date", format(subDays(new Date(), 30), "yyyy-MM-dd"))
+        .gte("entry_date", format(subDays(new Date(), 90), "yyyy-MM-dd"))
         .order("entry_date", { ascending: false }),
       supabase
         .from("weight_entries")
         .select("*")
         .eq("user_id", user.id)
-        .gte("entry_date", format(subDays(new Date(), 30), "yyyy-MM-dd"))
+        .gte("entry_date", format(subDays(new Date(), 90), "yyyy-MM-dd"))
         .order("entry_date", { ascending: false }),
       supabase.from("profiles").select("name").eq("user_id", user.id).maybeSingle(),
     ]);
