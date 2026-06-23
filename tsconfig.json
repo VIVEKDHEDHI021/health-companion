@@ -24,7 +24,7 @@
       "@/*": ["./src/*"],
       "@/components/*": ["./src/frontend/components/*"],
       "@/hooks/*": ["./src/frontend/hooks/*"],
-      "@/lib/*": ["./src/frontend/lib/*"]
+      "@/lib/*": ["./src/frontend/lib/*", "./src/lib/*"]
     }
   }
 }

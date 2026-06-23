@@ -1,5 +1,6 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getMessaging, type Messaging } from "firebase/messaging";
+import { getAnalytics } from "firebase/analytics";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,6 +16,10 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
+// Analytics is only initialized in the browser
+export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
+
+// Messaging is only initialized in the browser
 export const messaging =
   typeof window !== "undefined" ? getMessaging(app) : (null as unknown as Messaging);
 

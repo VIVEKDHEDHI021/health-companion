@@ -2,6 +2,7 @@ import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/r
 import { Toaster } from "@/frontend/components/ui/sonner";
 import { AuthProvider } from "@/frontend/lib/auth-context";
 import { ThemeProvider } from "@/frontend/lib/theme";
+import { NotificationProvider } from "@/providers/NotificationProvider";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -76,8 +77,10 @@ function RootComponent() {
     <RootShell>
       <ThemeProvider>
         <AuthProvider>
-          <Outlet />
-          <Toaster richColors position="top-center" />
+          <NotificationProvider>
+            <Outlet />
+            <Toaster richColors position="top-center" />
+          </NotificationProvider>
         </AuthProvider>
       </ThemeProvider>
     </RootShell>
