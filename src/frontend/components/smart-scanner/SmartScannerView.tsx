@@ -346,14 +346,14 @@ export default function SmartScannerView() {
 
       {/* Main Camera Viewport */}
       <div className="relative flex-1 flex flex-col items-center justify-center overflow-hidden">
-        {hasCameraAccess ? (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover"
-            playsInline
-            muted
-          />
-        ) : (
+        <video
+          ref={videoRef}
+          className={`absolute inset-0 h-full w-full object-cover ${hasCameraAccess ? "block" : "hidden"}`}
+          playsInline
+          muted
+        />
+
+        {hasCameraAccess === false && (
           <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-400 gap-4">
             <CameraOff className="h-16 w-16 text-zinc-600 stroke-[1.5]" />
             <div>
@@ -365,6 +365,13 @@ export default function SmartScannerView() {
             <Button onClick={startCamera} variant="secondary" className="mt-2">
               <RefreshCw className="mr-1.5 h-4 w-4" /> Try Again
             </Button>
+          </div>
+        )}
+
+        {hasCameraAccess === null && (
+          <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-400 gap-3">
+            <RefreshCw className="h-8 w-8 text-primary animate-spin" />
+            <p className="text-sm font-medium text-zinc-300">Requesting camera...</p>
           </div>
         )}
 
