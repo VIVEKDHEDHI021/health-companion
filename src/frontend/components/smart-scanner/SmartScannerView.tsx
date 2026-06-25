@@ -101,8 +101,8 @@ export default function SmartScannerView() {
       // Scale canvas to video aspect ratio
       const videoWidth = video.videoWidth;
       const videoHeight = video.videoHeight;
-      canvas.width = 480;
-      canvas.height = 300;
+      canvas.width = 960;
+      canvas.height = 600;
 
       // Draw cropped center of the video onto our canvas (the scanning box)
       // Scanner box relative bounds in camera preview:
@@ -258,8 +258,8 @@ export default function SmartScannerView() {
       const img = new Image();
       img.onload = async () => {
         const tempCanvas = document.createElement("canvas");
-        tempCanvas.width = 480;
-        tempCanvas.height = 300;
+        tempCanvas.width = 960;
+        tempCanvas.height = 600;
         const ctx = tempCanvas.getContext("2d");
         if (!ctx) return;
 

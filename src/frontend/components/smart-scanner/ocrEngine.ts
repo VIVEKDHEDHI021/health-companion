@@ -16,8 +16,12 @@ export async function initOcrEngine(): Promise<void> {
   try {
     // Create a worker for English language
     const worker = await createWorker("eng");
+    // Restrict characters to avoid false positives (e.g. bracket lines recognized as digits)
+    await worker.setParameters({
+      tessedit_char_whitelist: "0123456789.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%°/ ",
+    });
     tesseractWorker = worker;
-    console.log("[OCR] Tesseract.js worker initialized successfully.");
+    console.log("[OCR] Tesseract.js worker initialized successfully with whitelists.");
   } catch (error) {
     console.error("[OCR] Failed to initialize Tesseract worker:", error);
   } finally {
