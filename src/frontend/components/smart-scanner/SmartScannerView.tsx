@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Camera, CameraOff, ChevronLeft, Sparkles, Upload, RefreshCw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Camera, CameraOff, ChevronLeft, Sparkles, Upload, RefreshCw, AlertCircle, CheckCircle2, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/frontend/components/ui/button";
 import { performOcr, initOcrEngine, terminateOcrEngine } from "./ocrEngine";
@@ -8,6 +8,16 @@ import { detectDeviceAndReadings, ParsedReading } from "./deviceHeuristics";
 import { preprocessCanvasForOcr } from "./imageFilters";
 import { ConfirmationSheet } from "./ConfirmationSheet";
 import { scannerService } from "@/backend/services/scannerService";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/frontend/components/ui/dialog";
+import { Input } from "@/frontend/components/ui/input";
+import { Label } from "@/frontend/components/ui/label";
 
 export default function SmartScannerView() {
   const navigate = useNavigate();
@@ -22,6 +32,19 @@ export default function SmartScannerView() {
   const [ocrLog, setOcrLog] = useState<string>("Initializing camera feed...");
   const [detectedReading, setDetectedReading] = useState<ParsedReading | null>(null);
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+  const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") || "" : ""));
+
+  const handleSaveSettings = () => {
+    if (geminiApiKey.trim()) {
+      localStorage.setItem("user_gemini_api_key", geminiApiKey.trim());
+      toast.success("API key saved locally!");
+    } else {
+      localStorage.removeItem("user_gemini_api_key");
+      toast.info("API key cleared.");
+    }
+    setSettingsOpen(false);
+  };
   
   // High confidence automatic capture states
   const [consecutiveMatches, setConsecutiveMatches] = useState<number>(0);
@@ -353,15 +376,24 @@ export default function SmartScannerView() {
         <span className="font-semibold text-zinc-100 flex items-center gap-1.5">
           <Sparkles className="h-5 w-5 text-primary fill-primary/20" /> Smart Health Scanner
         </span>
-        <label className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-colors cursor-pointer">
-          <Upload className="h-5 w-5 text-zinc-300" />
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handleImageUpload}
-            className="hidden"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setSettingsOpen(true)}
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-colors"
+            title="Settings"
+          >
+            <Settings className="h-5 w-5 text-zinc-300" />
+          </button>
+          <label className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-colors cursor-pointer">
+            <Upload className="h-5 w-5 text-zinc-300" />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
+          </label>
+        </div>
       </header>
 
       {/* Main Camera Viewport */}
@@ -466,6 +498,60 @@ export default function SmartScannerView() {
         reading={detectedReading}
         onSave={handleSaveConfirmed}
       />
+
+      {/* Scanner Settings Dialog */}
+      <Dialog open={settingsOpen} onOpenChange={setSettingsOpen}>
+        <DialogContent className="sm:max-w-md border-zinc-800 bg-zinc-900 text-white shadow-lg rounded-2xl">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="text-xl font-bold flex items-center gap-2 text-zinc-100">
+              <Settings className="h-6 w-6 text-primary animate-[spin_10s_linear_infinite]" /> Configure Vision AI
+            </DialogTitle>
+            <DialogDescription className="text-sm text-zinc-400">
+              Provide a Gemini API Key to enable 100% accurate device scanning on your mobile phone or browser.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-3">
+            <div className="space-y-2">
+              <Label htmlFor="apiKeyInput" className="text-sm font-semibold text-zinc-300">Gemini API Key</Label>
+              <Input
+                id="apiKeyInput"
+                type="password"
+                placeholder="Paste API Key (starts with AIzaSy...)"
+                value={geminiApiKey}
+                onChange={(e) => setGeminiApiKey(e.target.value)}
+                className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-primary focus:ring-0"
+              />
+              <p className="text-[10px] text-zinc-500 leading-normal">
+                Your key is stored securely on your own device and is only used to directly query Google's Vision models for text extraction.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-0 pt-2 border-t border-zinc-800">
+            <Button
+              onClick={() => {
+                setGeminiApiKey("");
+                localStorage.removeItem("user_gemini_api_key");
+                toast.info("API key cleared.");
+                setSettingsOpen(false);
+              }}
+              variant="ghost"
+              className="text-zinc-400 hover:text-white"
+            >
+              Clear Key
+            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setSettingsOpen(false)} variant="secondary">
+                Cancel
+              </Button>
+              <Button onClick={handleSaveSettings} className="gradient-primary">
+                Save Key
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

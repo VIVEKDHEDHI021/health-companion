@@ -59,9 +59,9 @@ export async function terminateOcrEngine(): Promise<void> {
  * otherwise runs Tesseract.js locally inside a Web Worker.
  */
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
-  // Option 0: Direct Gemini AI Vision call from client (highest accuracy, works on both Web and Mobile Capacitor via VITE_GEMINI_API_KEY)
+  // Option 0: Direct Gemini AI Vision call from client (highest accuracy, works on both Web and Mobile Capacitor via VITE_GEMINI_API_KEY or Local Settings)
   try {
-    const clientApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    const clientApiKey = (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") : null) || import.meta.env.VITE_GEMINI_API_KEY;
     if (clientApiKey) {
       const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
       console.log("[OCR] Calling Gemini Vision API directly from client...");
