@@ -14,6 +14,7 @@ import {
   CloudOff,
   CloudRain,
   CloudLightning,
+  Cpu,
 } from "lucide-react";
 import { useState, type ReactNode, useEffect } from "react";
 import { useAuth } from "@/frontend/lib/auth-context";
@@ -29,6 +30,7 @@ const NAV = [
   { to: "/scanner" as const, icon: Camera, label: "Scan Device" },
   { to: "/history" as const, icon: History, label: "History" },
   { to: "/reports" as const, icon: BarChart3, label: "Reports" },
+  { to: "/training" as const, icon: Cpu, label: "AI Training" },
   { to: "/export" as const, icon: FileDown, label: "Export" },
 ];
 
