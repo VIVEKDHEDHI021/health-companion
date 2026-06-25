@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   // We exclude /scanner from mobile bottom nav to prevent squishing
-  const mobileNavItems = NAV.filter(n => n.to !== "/scanner");
+  const mobileNavItems = NAV.filter((n) => n.to !== "/scanner");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -89,7 +89,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>

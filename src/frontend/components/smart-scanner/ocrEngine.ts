@@ -3,7 +3,6 @@ import { Capacitor } from "@capacitor/core";
 import { preprocessCanvasForOcr } from "./imageFilters";
 import { OcrBlock, OcrResult } from "./types";
 
-
 let tesseractWorker: any = null;
 let isInitializing = false;
 
@@ -16,7 +15,8 @@ export async function initOcrEngine(): Promise<void> {
     const worker = await createWorker("eng");
     // Restrict characters to avoid false positives (e.g. bracket lines recognized as digits)
     await worker.setParameters({
-      tessedit_char_whitelist: "0123456789.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%°/ ",
+      tessedit_char_whitelist:
+        "0123456789.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%°/ ",
     });
     tesseractWorker = worker;
     console.log("[OCR] Tesseract.js worker initialized successfully with whitelists.");
@@ -48,14 +48,16 @@ export async function terminateOcrEngine(): Promise<void> {
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
   // Option 0.1: Direct Google Cloud Vision API call from client (highest accuracy OCR)
   try {
-    const clientVisionApiKey = 
-      (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") : null) || 
+    const clientVisionApiKey =
+      (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") : null) ||
       import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY ||
       import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     if (clientVisionApiKey) {
-      const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
+      const base64Data = canvas
+        .toDataURL("image/jpeg", 0.85)
+        .replace(/^data:image\/\w+;base64,/, "");
       console.log("[OCR] Calling Google Cloud Vision API directly from client...");
-      
+
       const response = await fetch(
         `https://vision.googleapis.com/v1/images:annotate?key=${clientVisionApiKey}`,
         {
@@ -77,14 +79,14 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
               },
             ],
           }),
-        }
+        },
       );
 
       if (response.ok) {
         const resJson = await response.json();
         const annotations = resJson.responses?.[0]?.textAnnotations || [];
         const fullText = annotations[0]?.description || "";
-        
+
         const blocks: OcrBlock[] = annotations.slice(1).map((ann: any) => {
           const vertices = ann.boundingPoly?.vertices || [];
           const x = vertices[0]?.x ?? 0;
@@ -118,11 +120,15 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
 
   // Option 0: Direct Gemini AI Vision call from client (highest accuracy, works on both Web and Mobile Capacitor via VITE_GEMINI_API_KEY or Local Settings)
   try {
-    const clientApiKey = (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") : null) || import.meta.env.VITE_GEMINI_API_KEY;
+    const clientApiKey =
+      (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") : null) ||
+      import.meta.env.VITE_GEMINI_API_KEY;
     if (clientApiKey) {
-      const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
+      const base64Data = canvas
+        .toDataURL("image/jpeg", 0.85)
+        .replace(/^data:image\/\w+;base64,/, "");
       console.log("[OCR] Calling Gemini Vision API directly from client...");
-      
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${clientApiKey}`,
         {
@@ -135,7 +141,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
               {
                 parts: [
                   {
-                    text: "Identify the medical device in this image and extract its screen reading values. You must return a single JSON object matching this schema exactly: { \"deviceType\": \"Blood Glucose Meter\" | \"Blood Pressure Monitor\" | \"Pulse Oximeter\" | \"Thermometer\" | \"Weight Scale\", \"data\": { \"glucose\"?: number, \"systolic\"?: number, \"diastolic\"?: number, \"pulse\"?: number, \"spo2\"?: number, \"temperature\"?: number, \"weight\"?: number, \"unit\"?: string }, \"confidence\": number }. The confidence should reflect your detection certainty between 0.0 and 1.0. Do not include markdown codeblocks, comments, or backticks; output only raw JSON.",
+                    text: 'Identify the medical device in this image and extract its screen reading values. You must return a single JSON object matching this schema exactly: { "deviceType": "Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale", "data": { "glucose"?: number, "systolic"?: number, "diastolic"?: number, "pulse"?: number, "spo2"?: number, "temperature"?: number, "weight"?: number, "unit"?: string }, "confidence": number }. The confidence should reflect your detection certainty between 0.0 and 1.0. Do not include markdown codeblocks, comments, or backticks; output only raw JSON.',
                   },
                   {
                     inlineData: {
@@ -147,10 +153,10 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
               },
             ],
             generationConfig: {
-              responseMimeType: "application/json"
-            }
+              responseMimeType: "application/json",
+            },
           }),
-        }
+        },
       );
 
       if (response.ok) {
@@ -183,8 +189,8 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
             deviceType: "Blood Glucose Meter",
             confidence: 0.0,
             data: {},
-            error: errorMsg
-          }
+            error: errorMsg,
+          },
         };
       }
     }
@@ -225,11 +231,11 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
       // Lazy load Capacitor plugins to avoid importing them on Web platforms
       const { Ocr } = await import("@capacitor-community/image-to-text");
       const { Filesystem, Directory } = await import("@capacitor/filesystem");
-      
+
       // Get base64 representation of canvas
       const base64Data = canvas.toDataURL("image/jpeg").replace(/^data:image\/jpeg;base64,/, "");
       const fileName = `ocr_temp_${Date.now()}.jpg`;
-      
+
       // Write temp file to local disk (required for the detectText API)
       const writeResult = await Filesystem.writeFile({
         path: fileName,
@@ -246,7 +252,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
       Filesystem.deleteFile({
         path: fileName,
         directory: Directory.Cache,
-      }).catch(err => console.warn("[OCR] Temp file deletion failed:", err));
+      }).catch((err) => console.warn("[OCR] Temp file deletion failed:", err));
 
       const texts = nativeResult.textDetections.map((d: any) => d.text).join("\n");
       const blocks: OcrBlock[] = nativeResult.textDetections.map((d: any) => ({
@@ -264,7 +270,10 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
         source: "Google ML Kit",
       };
     } catch (err) {
-      console.warn("[OCR] Native OCR failed or plugins not installed, falling back to Tesseract.js:", err);
+      console.warn(
+        "[OCR] Native OCR failed or plugins not installed, falling back to Tesseract.js:",
+        err,
+      );
       // Fallback to Tesseract.js below
     }
   }

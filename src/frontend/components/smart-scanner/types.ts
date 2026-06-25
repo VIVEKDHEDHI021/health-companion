@@ -1,8 +1,8 @@
 export interface OcrBlock {
   text: string;
   confidence: number; // 0 to 100
-  x: number;          // Left bound in pixels
-  y: number;          // Top bound in pixels
+  x: number; // Left bound in pixels
+  y: number; // Top bound in pixels
   width: number;
   height: number;
 }

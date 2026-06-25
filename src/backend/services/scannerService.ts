@@ -13,7 +13,12 @@ export interface ScanReadingData {
 }
 
 export interface ScanReadingPayload {
-  device_type: "Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale";
+  device_type:
+    | "Blood Glucose Meter"
+    | "Blood Pressure Monitor"
+    | "Pulse Oximeter"
+    | "Thermometer"
+    | "Weight Scale";
   reading_date: string; // yyyy-MM-dd
   reading_time: string; // HH:mm
   confidence: number;
@@ -27,22 +32,28 @@ export const scannerService = {
   // Save scan reading directly to database
   async saveScanReading(payload: ScanReadingPayload) {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       // 1. Insert into smart_scan_readings
-      const scanInsert = await supabase.from("smart_scan_readings").insert({
-        user_id: user.id,
-        device_type: payload.device_type,
-        reading_date: payload.reading_date,
-        reading_time: payload.reading_time,
-        confidence: payload.confidence,
-        ocr_source: payload.ocr_source,
-        image_url: payload.image_url || null,
-        notes: payload.notes || null,
-        sync_status: "synced",
-        data: payload.data as any,
-      }).select().single();
+      const scanInsert = await supabase
+        .from("smart_scan_readings")
+        .insert({
+          user_id: user.id,
+          device_type: payload.device_type,
+          reading_date: payload.reading_date,
+          reading_time: payload.reading_time,
+          confidence: payload.confidence,
+          ocr_source: payload.ocr_source,
+          image_url: payload.image_url || null,
+          notes: payload.notes || null,
+          sync_status: "synced",
+          data: payload.data as any,
+        })
+        .select()
+        .single();
 
       if (scanInsert.error) throw scanInsert.error;
 
@@ -66,12 +77,15 @@ export const scannerService = {
 
       // 3. Map to existing table: Weight Scale -> weight_entries
       if (payload.device_type === "Weight Scale" && payload.data.weight !== undefined) {
-        const weightInsert = await supabase.from("weight_entries").upsert({
-          user_id: user.id,
-          entry_date: payload.reading_date,
-          weight_kg: payload.data.weight,
-          notes: payload.notes ? `${payload.notes} (Scanned)` : "Scanned via Smart Scanner",
-        }, { onConflict: "user_id,entry_date" });
+        const weightInsert = await supabase.from("weight_entries").upsert(
+          {
+            user_id: user.id,
+            entry_date: payload.reading_date,
+            weight_kg: payload.data.weight,
+            notes: payload.notes ? `${payload.notes} (Scanned)` : "Scanned via Smart Scanner",
+          },
+          { onConflict: "user_id,entry_date" },
+        );
         if (weightInsert.error) {
           console.error("Failed to mirror scan to weight_entries:", weightInsert.error);
         }
@@ -99,7 +113,9 @@ export const scannerService = {
 
   // Fetch user's scan history
   async getScanHistory() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) throw new Error("Not authenticated");
 
     return supabase
@@ -108,5 +124,5 @@ export const scannerService = {
       .eq("user_id", user.id)
       .order("reading_date", { ascending: false })
       .order("reading_time", { ascending: false });
-  }
+  },
 };

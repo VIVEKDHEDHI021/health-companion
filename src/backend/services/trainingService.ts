@@ -1,16 +1,21 @@
 import { supabase } from "@/db/client";
 
 export interface BoundingBox {
-  x: number;     // Normalized ratio [0.0, 1.0]
-  y: number;     // Normalized ratio [0.0, 1.0]
+  x: number; // Normalized ratio [0.0, 1.0]
+  y: number; // Normalized ratio [0.0, 1.0]
   width: number; // Normalized ratio [0.0, 1.0]
-  height: number;// Normalized ratio [0.0, 1.0]
+  height: number; // Normalized ratio [0.0, 1.0]
 }
 
 export interface TrainingSample {
   id: string;
   user_id?: string | null;
-  device_type: "Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale";
+  device_type:
+    | "Blood Glucose Meter"
+    | "Blood Pressure Monitor"
+    | "Pulse Oximeter"
+    | "Thermometer"
+    | "Weight Scale";
   brand: string;
   model: string;
   device_name?: string | null;
@@ -34,11 +39,15 @@ export interface OcrFeedback {
 
 export const trainingService = {
   // Save training sample directly to Supabase (fails if database/network is unavailable)
-  async saveTrainingSample(sample: Omit<TrainingSample, "id" | "created_at">): Promise<{ success: boolean; id: string }> {
+  async saveTrainingSample(
+    sample: Omit<TrainingSample, "id" | "created_at">,
+  ): Promise<{ success: boolean; id: string }> {
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-    
-    const { data: { user } } = await supabase.auth.getUser();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
     const { error } = await supabase.from("smart_scan_training_samples").insert({
@@ -54,11 +63,11 @@ export const trainingService = {
       reading_bboxes: sample.reading_bboxes,
       actual_values: sample.actual_values,
       units: sample.units,
-      created_at: createdAt
+      created_at: createdAt,
     });
 
     if (error) throw error;
-    
+
     console.log("[TrainingService] Sample saved to Supabase successfully.");
     return { success: true, id };
   },
@@ -69,28 +78,31 @@ export const trainingService = {
       .from("smart_scan_training_samples")
       .select("*")
       .order("created_at", { ascending: false });
-      
+
     if (error) throw error;
     return (data || []) as any[];
   },
 
   // Delete a training sample directly from Supabase
   async deleteTrainingSample(id: string): Promise<boolean> {
-    const { error } = await supabase
-      .from("smart_scan_training_samples")
-      .delete()
-      .eq("id", id);
-    
+    const { error } = await supabase.from("smart_scan_training_samples").delete().eq("id", id);
+
     if (error) throw error;
     return true;
   },
 
   // Save correction feedback log directly to Supabase
-  async saveFeedback(feedback: { device_type: string; ocr_prediction: string; corrected_value: string }): Promise<void> {
+  async saveFeedback(feedback: {
+    device_type: string;
+    ocr_prediction: string;
+    corrected_value: string;
+  }): Promise<void> {
     const id = crypto.randomUUID();
     const createdAt = new Date().toISOString();
-    
-    const { data: { user } } = await supabase.auth.getUser();
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     const userId = user?.id || null;
 
     const { error } = await supabase.from("smart_scan_feedback").insert({
@@ -99,7 +111,7 @@ export const trainingService = {
       device_type: feedback.device_type,
       ocr_prediction: feedback.ocr_prediction,
       corrected_value: feedback.corrected_value,
-      created_at: createdAt
+      created_at: createdAt,
     });
     if (error) throw error;
   },
@@ -127,7 +139,7 @@ export const trainingService = {
       annotation_format: "Normalized ratios [0.0 - 1.0]",
       total_samples: samples.length,
       total_feedback_corrections: feedback.length,
-      samples: samples.map(s => ({
+      samples: samples.map((s) => ({
         id: s.id,
         device_type: s.device_type,
         brand: s.brand,
@@ -139,17 +151,21 @@ export const trainingService = {
         actual_values: s.actual_values,
         units: s.units,
         image_url: s.image_url,
-        created_at: s.created_at
+        created_at: s.created_at,
       })),
-      feedback_corrections: feedback
+      feedback_corrections: feedback,
     };
 
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataset, null, 2));
+    const dataStr =
+      "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataset, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `smart_health_scanner_dataset_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute(
+      "download",
+      `smart_health_scanner_dataset_${new Date().toISOString().split("T")[0]}.json`,
+    );
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-  }
+  },
 };

@@ -14,12 +14,12 @@ export const Route = createFileRoute("/api/analyze-image")({
           // Strip base64 headers
           const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
 
-          const visionApiKey = 
-            process.env.GOOGLE_CLOUD_VISION_API_KEY || 
+          const visionApiKey =
+            process.env.GOOGLE_CLOUD_VISION_API_KEY ||
             process.env.VITE_GOOGLE_CLOUD_VISION_API_KEY ||
             process.env.GOOGLE_VISION_API_KEY ||
             process.env.VITE_GOOGLE_VISION_API_KEY;
-          
+
           if (visionApiKey) {
             console.log("[analyze-image] Sending request to Google Cloud Vision API...");
             const response = await fetch(
@@ -43,7 +43,7 @@ export const Route = createFileRoute("/api/analyze-image")({
                     },
                   ],
                 }),
-              }
+              },
             );
 
             if (!response.ok) {
@@ -75,31 +75,39 @@ export const Route = createFileRoute("/api/analyze-image")({
             const parsedResult = detectDeviceAndReadings({
               text: fullText,
               blocks,
-              source: "Google Cloud Vision"
+              source: "Google Cloud Vision",
             });
 
             if (parsedResult) {
-              console.log("[analyze-image] Parsed Google Cloud Vision response successfully:", parsedResult);
+              console.log(
+                "[analyze-image] Parsed Google Cloud Vision response successfully:",
+                parsedResult,
+              );
               return Response.json({
                 deviceType: parsedResult.deviceType,
                 data: parsedResult.data,
                 confidence: parsedResult.confidence,
               });
             } else {
-              throw new Error("Could not detect device and readings from Google Cloud Vision OCR result.");
+              throw new Error(
+                "Could not detect device and readings from Google Cloud Vision OCR result.",
+              );
             }
           }
 
           const geminiApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
           if (!geminiApiKey) {
             return Response.json(
-              { error: "No vision API key (Google Cloud Vision or Gemini) configured on the server." },
-              { status: 500 }
+              {
+                error:
+                  "No vision API key (Google Cloud Vision or Gemini) configured on the server.",
+              },
+              { status: 500 },
             );
           }
 
           console.log("[analyze-image] Sending request to Gemini Vision API...");
-          
+
           const response = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`,
             {
@@ -112,7 +120,7 @@ export const Route = createFileRoute("/api/analyze-image")({
                   {
                     parts: [
                       {
-                        text: "Analyze this medical device screen image. Identify the device type (one of: 'Blood Glucose Meter', 'Blood Pressure Monitor', 'Pulse Oximeter', 'Thermometer', 'Weight Scale'). Extract the readings, units, and confidence. Return ONLY a JSON object matching this schema: { \"deviceType\": string, \"data\": { \"glucose\"?: number, \"systolic\"?: number, \"diastolic\"?: number, \"pulse\"?: number, \"spo2\"?: number, \"temperature\"?: number, \"weight\"?: number, \"unit\"?: string }, \"confidence\": number }. Do not include any markdown formatting, backticks, or comments.",
+                        text: 'Analyze this medical device screen image. Identify the device type (one of: \'Blood Glucose Meter\', \'Blood Pressure Monitor\', \'Pulse Oximeter\', \'Thermometer\', \'Weight Scale\'). Extract the readings, units, and confidence. Return ONLY a JSON object matching this schema: { "deviceType": string, "data": { "glucose"?: number, "systolic"?: number, "diastolic"?: number, "pulse"?: number, "spo2"?: number, "temperature"?: number, "weight"?: number, "unit"?: string }, "confidence": number }. Do not include any markdown formatting, backticks, or comments.',
                       },
                       {
                         inlineData: {
@@ -124,7 +132,7 @@ export const Route = createFileRoute("/api/analyze-image")({
                   },
                 ],
               }),
-            }
+            },
           );
 
           if (!response.ok) {
@@ -134,7 +142,7 @@ export const Route = createFileRoute("/api/analyze-image")({
 
           const resJson = await response.json();
           const responseText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
-          
+
           // Parse JSON out of response
           const cleanText = responseText.replace(/```json|```/g, "").trim();
           const parsedResult = JSON.parse(cleanText);

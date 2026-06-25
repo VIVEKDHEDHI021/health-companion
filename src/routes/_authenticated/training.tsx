@@ -1,32 +1,32 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Sparkles, 
-  Upload, 
-  Trash2, 
-  Download, 
-  Layers, 
-  Cpu, 
+import {
+  Sparkles,
+  Upload,
+  Trash2,
+  Download,
+  Layers,
+  Cpu,
   Activity,
-  CheckCircle2, 
-  ChevronRight, 
-  HelpCircle, 
-  Search, 
+  CheckCircle2,
+  ChevronRight,
+  HelpCircle,
+  Search,
   Filter,
   RefreshCw,
   Plus,
   ArrowRight,
-  Database
+  Database,
 } from "lucide-react";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/frontend/components/ui/select";
 import { toast } from "sonner";
 import { trainingService, TrainingSample, BoundingBox } from "@/backend/services/trainingService";
@@ -43,8 +43,8 @@ const DEVICE_LABELS = {
   "Blood Glucose Meter": ["glucose", "unit"],
   "Blood Pressure Monitor": ["systolic", "diastolic", "pulse"],
   "Pulse Oximeter": ["spo2", "pulse"],
-  "Thermometer": ["temperature", "unit"],
-  "Weight Scale": ["weight", "unit"]
+  Thermometer: ["temperature", "unit"],
+  "Weight Scale": ["weight", "unit"],
 };
 
 const FIELD_HELP = {
@@ -56,7 +56,7 @@ const FIELD_HELP = {
   spo2: "Draw a box around the SpO2 % value.",
   temperature: "Draw a box around the Temperature value.",
   weight: "Draw a box around the Weight value.",
-  unit: "Draw a box around the unit string (e.g. mg/dL, kg, °C)."
+  unit: "Draw a box around the unit string (e.g. mg/dL, kg, °C).",
 };
 
 function TrainingPage() {
@@ -72,7 +72,10 @@ function TrainingPage() {
 
   // Step 1: Upload Details
   const [imageSrc, setImageSrc] = useState<string | null>(null);
-  const [imageRes, setImageRes] = useState<{ width: number; height: number }>({ width: 0, height: 0 });
+  const [imageRes, setImageRes] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
   const [deviceType, setDeviceType] = useState<keyof typeof DEVICE_LABELS>("Blood Glucose Meter");
   const [brand, setBrand] = useState("");
   const [model, setModel] = useState("");
@@ -90,7 +93,12 @@ function TrainingPage() {
   const workspaceRef = useRef<HTMLDivElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [drawStart, setDrawStart] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [currentBox, setCurrentBox] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [currentBox, setCurrentBox] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
 
   // Field values temp input
   const [tempValue, setTempValue] = useState("");
@@ -149,7 +157,7 @@ function TrainingPage() {
   // Mouse/Pointer Drawing Handlers
   const handlePointerDown = (e: React.MouseEvent) => {
     if (!imageSrc || !workspaceRef.current) return;
-    
+
     const rect = workspaceRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -190,7 +198,7 @@ function TrainingPage() {
       x: currentBox.x / rect.width,
       y: currentBox.y / rect.height,
       width: currentBox.w / rect.width,
-      height: currentBox.h / rect.height
+      height: currentBox.h / rect.height,
     };
 
     if (currentStepField === "display") {
@@ -209,16 +217,16 @@ function TrainingPage() {
         if (deviceType === "Thermometer") defaultUnit = "°C";
         else if (deviceType === "Weight Scale") defaultUnit = "kg";
         else if (deviceType === "Pulse Oximeter") defaultUnit = "%";
-        
-        setReadingBboxes(prev => ({ ...prev, [fieldName]: normalizedBbox }));
-        setUnits(prev => ({ ...prev, [fieldName]: defaultUnit }));
-        setActualValues(prev => ({ ...prev, [fieldName]: defaultUnit }));
-        
+
+        setReadingBboxes((prev) => ({ ...prev, [fieldName]: normalizedBbox }));
+        setUnits((prev) => ({ ...prev, [fieldName]: defaultUnit }));
+        setActualValues((prev) => ({ ...prev, [fieldName]: defaultUnit }));
+
         // Auto advance or save
         advanceStep();
       } else {
         // Cache box for drawing, open value input
-        setReadingBboxes(prev => ({ ...prev, [fieldName]: normalizedBbox }));
+        setReadingBboxes((prev) => ({ ...prev, [fieldName]: normalizedBbox }));
         setCurrentBox(null);
       }
     }
@@ -228,7 +236,7 @@ function TrainingPage() {
     setCurrentBox(null);
     setTempValue("");
     if (annotationStep < currentFields.length) {
-      setAnnotationStep(prev => prev + 1);
+      setAnnotationStep((prev) => prev + 1);
     } else {
       // Completed labelling!
       setAnnotationStep(currentFields.length + 1);
@@ -244,19 +252,19 @@ function TrainingPage() {
 
     const fieldName = currentStepField;
     const isNum = !isNaN(Number(tempValue));
-    
-    setActualValues(prev => ({ 
-      ...prev, 
-      [fieldName]: isNum ? Number(tempValue) : tempValue 
+
+    setActualValues((prev) => ({
+      ...prev,
+      [fieldName]: isNum ? Number(tempValue) : tempValue,
     }));
 
     // Auto assign units if needed
     if (deviceType === "Blood Glucose Meter" && fieldName === "glucose") {
-      setUnits(prev => ({ ...prev, [fieldName]: "mg/dL" }));
+      setUnits((prev) => ({ ...prev, [fieldName]: "mg/dL" }));
     } else if (deviceType === "Thermometer" && fieldName === "temperature") {
-      setUnits(prev => ({ ...prev, [fieldName]: "°C" }));
+      setUnits((prev) => ({ ...prev, [fieldName]: "°C" }));
     } else if (deviceType === "Weight Scale" && fieldName === "weight") {
-      setUnits(prev => ({ ...prev, [fieldName]: "kg" }));
+      setUnits((prev) => ({ ...prev, [fieldName]: "kg" }));
     }
 
     advanceStep();
@@ -285,7 +293,7 @@ function TrainingPage() {
         display_bbox: displayBbox,
         reading_bboxes: readingBboxes,
         actual_values: actualValues,
-        units: units
+        units: units,
       });
 
       if (result.success) {
@@ -332,13 +340,14 @@ function TrainingPage() {
   };
 
   // Unique lists for filters
-  const uniqueBrands = Array.from(new Set(samples.map(s => s.brand)));
-  
+  const uniqueBrands = Array.from(new Set(samples.map((s) => s.brand)));
+
   // Filtered samples
-  const filteredSamples = samples.filter(s => {
+  const filteredSamples = samples.filter((s) => {
     const devMatch = filterDevice === "all" || s.device_type === filterDevice;
     const brandMatch = filterBrand === "all" || s.brand === filterBrand;
-    const modelMatch = !searchModel.trim() || s.model.toLowerCase().includes(searchModel.toLowerCase());
+    const modelMatch =
+      !searchModel.trim() || s.model.toLowerCase().includes(searchModel.toLowerCase());
     return devMatch && brandMatch && modelMatch;
   });
 
@@ -351,15 +360,20 @@ function TrainingPage() {
             <Cpu className="h-8 w-8 text-primary" /> Smart Scanner Training Portal
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Build and manage a labeled bounding box dataset to train the future Smart Health Scanner AI models.
+            Build and manage a labeled bounding box dataset to train the future Smart Health Scanner
+            AI models.
           </p>
         </div>
         <div className="flex items-center gap-2.5">
-          <Button 
+          <Button
             onClick={() => setActiveTab(activeTab === "workspace" ? "dataset" : "workspace")}
             variant="secondary"
           >
-            {activeTab === "workspace" ? <Database className="mr-1.5 h-4 w-4" /> : <Plus className="mr-1.5 h-4 w-4" />}
+            {activeTab === "workspace" ? (
+              <Database className="mr-1.5 h-4 w-4" />
+            ) : (
+              <Plus className="mr-1.5 h-4 w-4" />
+            )}
             {activeTab === "workspace" ? "View Dataset Manager" : "Annotation Workspace"}
           </Button>
           <Button onClick={handleExport} className="gradient-primary">
@@ -381,8 +395,8 @@ function TrainingPage() {
               <div className="space-y-3.5">
                 <div className="space-y-1">
                   <Label htmlFor="deviceType">Device Category</Label>
-                  <Select 
-                    value={deviceType} 
+                  <Select
+                    value={deviceType}
                     onValueChange={(val: any) => {
                       setDeviceType(val);
                       // reset labeling steps
@@ -407,31 +421,31 @@ function TrainingPage() {
 
                 <div className="space-y-1">
                   <Label htmlFor="brand">Brand Name</Label>
-                  <Input 
-                    id="brand" 
-                    placeholder="e.g. On Call Plus, Omron" 
+                  <Input
+                    id="brand"
+                    placeholder="e.g. On Call Plus, Omron"
                     value={brand}
-                    onChange={e => setBrand(e.target.value)}
+                    onChange={(e) => setBrand(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label htmlFor="model">Model Number</Label>
-                  <Input 
-                    id="model" 
-                    placeholder="e.g. OCP-100, HEM-7120" 
+                  <Input
+                    id="model"
+                    placeholder="e.g. OCP-100, HEM-7120"
                     value={model}
-                    onChange={e => setModel(e.target.value)}
+                    onChange={(e) => setModel(e.target.value)}
                   />
                 </div>
 
                 <div className="space-y-1">
                   <Label htmlFor="deviceName">Device Nickname (Optional)</Label>
-                  <Input 
-                    id="deviceName" 
-                    placeholder="e.g. Grandma's Glucose Meter" 
+                  <Input
+                    id="deviceName"
+                    placeholder="e.g. Grandma's Glucose Meter"
                     value={deviceName}
-                    onChange={e => setDeviceName(e.target.value)}
+                    onChange={(e) => setDeviceName(e.target.value)}
                   />
                 </div>
               </div>
@@ -440,14 +454,24 @@ function TrainingPage() {
             {/* Label Steps Log */}
             {imageSrc && (
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-3">
-                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">Annotation Guide</h3>
-                
+                <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider">
+                  Annotation Guide
+                </h3>
+
                 <div className="space-y-2.5">
-                  <div className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
-                    annotationStep === 0 ? "bg-primary-soft border-primary/20 text-primary" : "bg-muted/40 border-transparent text-muted-foreground"
-                  }`}>
+                  <div
+                    className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
+                      annotationStep === 0
+                        ? "bg-primary-soft border-primary/20 text-primary"
+                        : "bg-muted/40 border-transparent text-muted-foreground"
+                    }`}
+                  >
                     <span>1. LCD Display Bounds</span>
-                    {displayBbox ? <CheckCircle2 className="h-4 w-4 text-emerald-500 fill-emerald-500/10" /> : <ChevronRight className="h-4 w-4" />}
+                    {displayBbox ? (
+                      <CheckCircle2 className="h-4 w-4 text-emerald-500 fill-emerald-500/10" />
+                    ) : (
+                      <ChevronRight className="h-4 w-4" />
+                    )}
                   </div>
 
                   {currentFields.map((field, idx) => {
@@ -455,16 +479,27 @@ function TrainingPage() {
                     const isCurrent = annotationStep === stepNum;
                     const isDone = readingBboxes[field] !== undefined;
                     return (
-                      <div key={field} className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
-                        isCurrent ? "bg-primary-soft border-primary/20 text-primary" : "bg-muted/40 border-transparent text-muted-foreground"
-                      }`}>
-                        <span className="capitalize">{stepNum + 1}. Label {field} Box</span>
+                      <div
+                        key={field}
+                        className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-semibold ${
+                          isCurrent
+                            ? "bg-primary-soft border-primary/20 text-primary"
+                            : "bg-muted/40 border-transparent text-muted-foreground"
+                        }`}
+                      >
+                        <span className="capitalize">
+                          {stepNum + 1}. Label {field} Box
+                        </span>
                         {isDone ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">{String(actualValues[field] || "")}</span>
+                            <span className="text-[10px] font-mono text-emerald-600 bg-emerald-50 px-1 py-0.5 rounded">
+                              {String(actualValues[field] || "")}
+                            </span>
                             <CheckCircle2 className="h-4 w-4 text-emerald-500 fill-emerald-500/10" />
                           </div>
-                        ) : <ChevronRight className="h-4 w-4" />}
+                        ) : (
+                          <ChevronRight className="h-4 w-4" />
+                        )}
                       </div>
                     );
                   })}
@@ -490,12 +525,13 @@ function TrainingPage() {
                   <div>
                     <p className="text-sm font-bold text-foreground">Upload Device Image</p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Drag & drop a high resolution photo of your medical screen, or click to browse.
+                      Drag & drop a high resolution photo of your medical screen, or click to
+                      browse.
                     </p>
                   </div>
-                  <input 
-                    type="file" 
-                    accept="image/*" 
+                  <input
+                    type="file"
+                    accept="image/*"
                     onChange={handleImageLoad}
                     className="hidden"
                   />
@@ -507,29 +543,34 @@ function TrainingPage() {
                     <HelpCircle className="h-5 w-5 text-primary shrink-0 animate-pulse" />
                     <div>
                       <span className="font-bold text-primary capitalize">
-                        {currentStepField === "display" ? "LCD Display Screen" : `Label: ${currentStepField}`}
+                        {currentStepField === "display"
+                          ? "LCD Display Screen"
+                          : `Label: ${currentStepField}`}
                       </span>
-                      <p className="text-[10px] text-zinc-400 mt-0.5">{FIELD_HELP[currentStepField as keyof typeof FIELD_HELP] || "Click and drag to draw outline box."}</p>
+                      <p className="text-[10px] text-zinc-400 mt-0.5">
+                        {FIELD_HELP[currentStepField as keyof typeof FIELD_HELP] ||
+                          "Click and drag to draw outline box."}
+                      </p>
                     </div>
                   </div>
 
                   {/* Canvas Viewport container */}
-                  <div 
+                  <div
                     ref={workspaceRef}
                     onMouseDown={handlePointerDown}
                     onMouseMove={handlePointerMove}
                     onMouseUp={handlePointerUp}
                     className="relative w-full aspect-[4/3] bg-zinc-950 rounded-2xl overflow-hidden shadow-inner border border-zinc-800 cursor-crosshair select-none"
                   >
-                    <img 
-                      src={imageSrc} 
+                    <img
+                      src={imageSrc}
                       alt="Device to label"
                       className="w-full h-full object-contain pointer-events-none"
                     />
 
                     {/* Display box (Yellow overlay) */}
                     {displayBbox && (
-                      <div 
+                      <div
                         className="absolute border-2 border-yellow-500 bg-yellow-500/10 shadow-[0_0_6px_rgba(234,179,8,0.4)] pointer-events-none flex items-start p-1"
                         style={{
                           left: `${displayBbox.x * 100}%`,
@@ -538,16 +579,20 @@ function TrainingPage() {
                           height: `${displayBbox.height * 100}%`,
                         }}
                       >
-                        <span className="text-[8px] font-bold text-yellow-500 bg-zinc-950 px-1 rounded uppercase tracking-wider">LCD</span>
+                        <span className="text-[8px] font-bold text-yellow-500 bg-zinc-950 px-1 rounded uppercase tracking-wider">
+                          LCD
+                        </span>
                       </div>
                     )}
 
                     {/* Reading value boxes (Green overlay) */}
                     {Object.entries(readingBboxes).map(([field, box]) => (
-                      <div 
+                      <div
                         key={field}
                         className={`absolute border-2 bg-emerald-500/15 pointer-events-none flex items-start p-1 ${
-                          field === "unit" ? "border-purple-500 bg-purple-500/15" : "border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]"
+                          field === "unit"
+                            ? "border-purple-500 bg-purple-500/15"
+                            : "border-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.3)]"
                         }`}
                         style={{
                           left: `${box.x * 100}%`,
@@ -556,9 +601,13 @@ function TrainingPage() {
                           height: `${box.height * 100}%`,
                         }}
                       >
-                        <span className={`text-[8px] font-bold px-1 rounded uppercase tracking-wider ${
-                          field === "unit" ? "text-purple-400 bg-zinc-950" : "text-emerald-400 bg-zinc-950"
-                        }`}>
+                        <span
+                          className={`text-[8px] font-bold px-1 rounded uppercase tracking-wider ${
+                            field === "unit"
+                              ? "text-purple-400 bg-zinc-950"
+                              : "text-emerald-400 bg-zinc-950"
+                          }`}
+                        >
                           {field}: {String(actualValues[field] || "")}
                         </span>
                       </div>
@@ -566,9 +615,11 @@ function TrainingPage() {
 
                     {/* Live drawing outline rectangle */}
                     {isDrawing && currentBox && (
-                      <div 
+                      <div
                         className={`absolute border-2 pointer-events-none border-dashed ${
-                          currentStepField === "display" ? "border-yellow-400 bg-yellow-400/5" : "border-emerald-400 bg-emerald-400/5"
+                          currentStepField === "display"
+                            ? "border-yellow-400 bg-yellow-400/5"
+                            : "border-emerald-400 bg-emerald-400/5"
                         }`}
                         style={{
                           left: currentBox.x,
@@ -581,29 +632,37 @@ function TrainingPage() {
                   </div>
 
                   {/* Input dialog popup for values after drawing */}
-                  {imageSrc && currentStepField !== "display" && currentStepField !== "unit" && readingBboxes[currentStepField] && actualValues[currentStepField] === undefined && (
-                    <div className="p-4 border border-border bg-card rounded-2xl shadow-lg flex items-end gap-3 animate-in slide-in-from-bottom-2">
-                      <div className="flex-1 space-y-1">
-                        <Label htmlFor="tempValInput" className="capitalize">Enter Value for {currentStepField}</Label>
-                        <Input 
-                          id="tempValInput"
-                          type="text"
-                          placeholder={`Value shown for ${currentStepField}`}
-                          value={tempValue}
-                          onChange={e => setTempValue(e.target.value)}
-                          onKeyDown={e => e.key === "Enter" && handleSaveFieldValue()}
-                          autoFocus
-                        />
+                  {imageSrc &&
+                    currentStepField !== "display" &&
+                    currentStepField !== "unit" &&
+                    readingBboxes[currentStepField] &&
+                    actualValues[currentStepField] === undefined && (
+                      <div className="p-4 border border-border bg-card rounded-2xl shadow-lg flex items-end gap-3 animate-in slide-in-from-bottom-2">
+                        <div className="flex-1 space-y-1">
+                          <Label htmlFor="tempValInput" className="capitalize">
+                            Enter Value for {currentStepField}
+                          </Label>
+                          <Input
+                            id="tempValInput"
+                            type="text"
+                            placeholder={`Value shown for ${currentStepField}`}
+                            value={tempValue}
+                            onChange={(e) => setTempValue(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleSaveFieldValue()}
+                            autoFocus
+                          />
+                        </div>
+                        <Button onClick={handleSaveFieldValue} className="gradient-primary">
+                          Confirm <ArrowRight className="ml-1 h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button onClick={handleSaveFieldValue} className="gradient-primary">
-                        Confirm <ArrowRight className="ml-1 h-4 w-4" />
-                      </Button>
-                    </div>
-                  )}
+                    )}
 
                   <div className="flex items-center justify-between pt-2">
-                    <span className="text-xs text-muted-foreground font-mono">Resolution: {imageRes.width}x{imageRes.height}</span>
-                    <button 
+                    <span className="text-xs text-muted-foreground font-mono">
+                      Resolution: {imageRes.width}x{imageRes.height}
+                    </span>
+                    <button
                       onClick={() => setImageSrc(null)}
                       className="text-xs text-destructive hover:underline font-semibold"
                     >
@@ -619,10 +678,12 @@ function TrainingPage() {
               <div className="p-4 border border-border bg-card rounded-2xl shadow-sm flex items-center justify-between">
                 <div>
                   <h4 className="font-bold text-foreground">Save Annotated Dataset Sample</h4>
-                  <p className="text-xs text-muted-foreground mt-0.5">Please check display and reading outlines before saving.</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Please check display and reading outlines before saving.
+                  </p>
                 </div>
-                <Button 
-                  onClick={handleSaveSample} 
+                <Button
+                  onClick={handleSaveSample}
                   loading={loading}
                   className="gradient-primary font-semibold px-6"
                 >
@@ -643,7 +704,9 @@ function TrainingPage() {
             </div>
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <span className="text-xs text-muted-foreground font-semibold">Device Types</span>
-              <p className="text-3xl font-extrabold mt-1">{Array.from(new Set(samples.map(s => s.device_type))).length}</p>
+              <p className="text-3xl font-extrabold mt-1">
+                {Array.from(new Set(samples.map((s) => s.device_type))).length}
+              </p>
             </div>
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <span className="text-xs text-muted-foreground font-semibold">Distinct Brands</span>
@@ -651,7 +714,9 @@ function TrainingPage() {
             </div>
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
               <span className="text-xs text-muted-foreground font-semibold">Unique Models</span>
-              <p className="text-3xl font-extrabold mt-1">{Array.from(new Set(samples.map(s => s.model))).length}</p>
+              <p className="text-3xl font-extrabold mt-1">
+                {Array.from(new Set(samples.map((s) => s.model))).length}
+              </p>
             </div>
           </div>
 
@@ -659,7 +724,9 @@ function TrainingPage() {
           <div className="flex flex-col md:flex-row gap-3 p-4 border border-border bg-card rounded-2xl shadow-sm">
             <div className="flex-1 flex flex-col md:flex-row gap-3">
               <div className="space-y-1 flex-1">
-                <Label className="text-[10px] font-semibold uppercase text-muted-foreground">Filter Category</Label>
+                <Label className="text-[10px] font-semibold uppercase text-muted-foreground">
+                  Filter Category
+                </Label>
                 <Select value={filterDevice} onValueChange={setFilterDevice}>
                   <SelectTrigger className="font-medium">
                     <SelectValue />
@@ -676,15 +743,19 @@ function TrainingPage() {
               </div>
 
               <div className="space-y-1 flex-1">
-                <Label className="text-[10px] font-semibold uppercase text-muted-foreground">Filter Brand</Label>
+                <Label className="text-[10px] font-semibold uppercase text-muted-foreground">
+                  Filter Brand
+                </Label>
                 <Select value={filterBrand} onValueChange={setFilterBrand}>
                   <SelectTrigger className="font-medium">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Brands</SelectItem>
-                    {uniqueBrands.map(b => (
-                      <SelectItem key={b} value={b}>{b}</SelectItem>
+                    {uniqueBrands.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -692,13 +763,15 @@ function TrainingPage() {
             </div>
 
             <div className="md:w-72 space-y-1">
-              <Label className="text-[10px] font-semibold uppercase text-muted-foreground">Search Model</Label>
+              <Label className="text-[10px] font-semibold uppercase text-muted-foreground">
+                Search Model
+              </Label>
               <div className="relative">
                 <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search model number..." 
+                <Input
+                  placeholder="Search model number..."
                   value={searchModel}
-                  onChange={e => setSearchModel(e.target.value)}
+                  onChange={(e) => setSearchModel(e.target.value)}
                   className="pl-9"
                 />
               </div>
@@ -716,18 +789,22 @@ function TrainingPage() {
               <Database className="h-12 w-12 text-zinc-400 mx-auto" />
               <h3 className="font-bold text-foreground mt-3">No dataset samples found</h3>
               <p className="text-xs text-muted-foreground mt-1 max-w-xs mx-auto">
-                No labeled images match your filter parameters. Switch to Annotation workspace to add samples.
+                No labeled images match your filter parameters. Switch to Annotation workspace to
+                add samples.
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredSamples.map((sample) => (
-                <div key={sample.id} className="group rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                <div
+                  key={sample.id}
+                  className="group rounded-2xl border border-border bg-card overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col"
+                >
                   {/* Thumbnail viewport */}
                   <div className="relative w-full aspect-[4/3] bg-zinc-950 overflow-hidden border-b border-border flex items-center justify-center">
-                    <img 
-                      src={sample.image_url} 
-                      alt={sample.brand} 
+                    <img
+                      src={sample.image_url}
+                      alt={sample.brand}
                       className="w-full h-full object-contain"
                     />
 
@@ -735,7 +812,7 @@ function TrainingPage() {
                     <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity p-3 flex flex-col justify-between pointer-events-none">
                       <div className="relative w-full h-full">
                         {/* LCD */}
-                        <div 
+                        <div
                           className="absolute border border-yellow-500 bg-yellow-500/10 flex items-start"
                           style={{
                             left: `${sample.display_bbox.x * 100}%`,
@@ -744,14 +821,18 @@ function TrainingPage() {
                             height: `${sample.display_bbox.height * 100}%`,
                           }}
                         >
-                          <span className="text-[6px] font-bold text-yellow-400 bg-zinc-950 px-0.5 rounded">LCD</span>
+                          <span className="text-[6px] font-bold text-yellow-400 bg-zinc-950 px-0.5 rounded">
+                            LCD
+                          </span>
                         </div>
                         {/* Readings */}
                         {Object.entries(sample.reading_bboxes).map(([field, box]) => (
-                          <div 
+                          <div
                             key={field}
                             className={`absolute border flex items-start ${
-                              field === "unit" ? "border-purple-500 bg-purple-500/10" : "border-emerald-500 bg-emerald-500/10"
+                              field === "unit"
+                                ? "border-purple-500 bg-purple-500/10"
+                                : "border-emerald-500 bg-emerald-500/10"
                             }`}
                             style={{
                               left: `${box.x * 100}%`,
@@ -773,8 +854,10 @@ function TrainingPage() {
                   <div className="p-4 flex-1 flex flex-col justify-between gap-4">
                     <div>
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-bold uppercase text-primary tracking-wider">{sample.device_type}</span>
-                        <button 
+                        <span className="text-[10px] font-bold uppercase text-primary tracking-wider">
+                          {sample.device_type}
+                        </span>
+                        <button
                           onClick={() => handleDeleteSample(sample.id)}
                           className="p-1.5 text-zinc-400 hover:text-destructive hover:bg-destructive/5 rounded-lg transition-colors"
                           aria-label="Delete sample"
@@ -782,18 +865,34 @@ function TrainingPage() {
                           <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
-                      <h3 className="font-extrabold text-foreground text-sm mt-1">{sample.brand} <span className="font-medium text-muted-foreground font-mono">{sample.model}</span></h3>
-                      {sample.device_name && <p className="text-xs text-muted-foreground mt-0.5">{sample.device_name}</p>}
+                      <h3 className="font-extrabold text-foreground text-sm mt-1">
+                        {sample.brand}{" "}
+                        <span className="font-medium text-muted-foreground font-mono">
+                          {sample.model}
+                        </span>
+                      </h3>
+                      {sample.device_name && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{sample.device_name}</p>
+                      )}
                     </div>
 
                     <div className="border-t border-border pt-3">
-                      <Label className="text-[10px] font-semibold uppercase text-muted-foreground">Labeled Readings</Label>
+                      <Label className="text-[10px] font-semibold uppercase text-muted-foreground">
+                        Labeled Readings
+                      </Label>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {Object.entries(sample.actual_values).map(([field, val]) => (
-                          <div key={field} className="flex items-center gap-1 text-[11px] bg-muted px-2 py-0.5 rounded-lg font-medium">
+                          <div
+                            key={field}
+                            className="flex items-center gap-1 text-[11px] bg-muted px-2 py-0.5 rounded-lg font-medium"
+                          >
                             <span className="text-muted-foreground capitalize">{field}:</span>
                             <span className="text-foreground font-bold">{String(val)}</span>
-                            {sample.units[field] && <span className="text-[9px] text-muted-foreground font-semibold">{sample.units[field]}</span>}
+                            {sample.units[field] && (
+                              <span className="text-[9px] text-muted-foreground font-semibold">
+                                {sample.units[field]}
+                              </span>
+                            )}
                           </div>
                         ))}
                       </div>

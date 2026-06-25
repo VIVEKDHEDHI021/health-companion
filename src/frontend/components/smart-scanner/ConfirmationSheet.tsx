@@ -36,25 +36,31 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
   const [notes, setNotes] = useState("");
   const [readingDate, setReadingDate] = useState("");
   const [readingTime, setReadingTime] = useState("");
-  
+
   // Device Type State (allows user overrides)
-  const [deviceType, setDeviceType] = useState<"Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale">("Blood Glucose Meter");
+  const [deviceType, setDeviceType] = useState<
+    | "Blood Glucose Meter"
+    | "Blood Pressure Monitor"
+    | "Pulse Oximeter"
+    | "Thermometer"
+    | "Weight Scale"
+  >("Blood Glucose Meter");
 
   // Dynamic fields
   const [glucose, setGlucose] = useState<number>(0);
   const [glucoseUnit, setGlucoseUnit] = useState("mg/dL");
   const [glucoseType, setGlucoseType] = useState<any>("Fasting");
-  
+
   const [systolic, setSystolic] = useState<number>(0);
   const [diastolic, setDiastolic] = useState<number>(0);
   const [bpPulse, setBpPulse] = useState<number>(0);
-  
+
   const [spo2, setSpo2] = useState<number>(0);
   const [oxPulse, setOxPulse] = useState<number>(0);
-  
+
   const [temperature, setTemperature] = useState<number>(0);
   const [tempUnit, setTempUnit] = useState("°C");
-  
+
   const [weight, setWeight] = useState<number>(0);
   const [weightUnit, setWeightUnit] = useState("kg");
 
@@ -73,7 +79,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
 
       // Prepopulate states based on read data
       const d = reading.data;
-      
+
       // Parse any numeric candidates from raw text to prefill other fields in case user switches device type
       const numbers = (reading.rawText || "").match(/\b\d{1,3}(?:\.\d)?\b/g) || [];
       const num0 = numbers.length > 0 ? parseFloat(numbers[0]) : 0;
@@ -123,7 +129,21 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
     } else {
       setRangeWarning(null);
     }
-  }, [reading, deviceType, glucose, glucoseUnit, systolic, diastolic, bpPulse, spo2, oxPulse, temperature, tempUnit, weight, weightUnit]);
+  }, [
+    reading,
+    deviceType,
+    glucose,
+    glucoseUnit,
+    systolic,
+    diastolic,
+    bpPulse,
+    spo2,
+    oxPulse,
+    temperature,
+    tempUnit,
+    weight,
+    weightUnit,
+  ]);
 
   if (!reading) return null;
 
@@ -133,33 +153,33 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
       // Assemble final data structure
       let finalDataFields: any = {};
       if (deviceType === "Blood Glucose Meter") {
-        finalDataFields = { 
-          glucose: Number(glucose), 
+        finalDataFields = {
+          glucose: Number(glucose),
           unit: glucoseUnit,
-          glucose_reading_type: glucoseType 
+          glucose_reading_type: glucoseType,
         };
       } else if (deviceType === "Blood Pressure Monitor") {
-        finalDataFields = { 
-          systolic: Number(systolic), 
-          diastolic: Number(diastolic), 
-          pulse: bpPulse ? Number(bpPulse) : undefined, 
-          unit: "mmHg" 
+        finalDataFields = {
+          systolic: Number(systolic),
+          diastolic: Number(diastolic),
+          pulse: bpPulse ? Number(bpPulse) : undefined,
+          unit: "mmHg",
         };
       } else if (deviceType === "Pulse Oximeter") {
-        finalDataFields = { 
-          spo2: Number(spo2), 
-          pulse: oxPulse ? Number(oxPulse) : undefined, 
-          unit: "%" 
+        finalDataFields = {
+          spo2: Number(spo2),
+          pulse: oxPulse ? Number(oxPulse) : undefined,
+          unit: "%",
         };
       } else if (deviceType === "Thermometer") {
-        finalDataFields = { 
-          temperature: Number(temperature), 
-          unit: tempUnit 
+        finalDataFields = {
+          temperature: Number(temperature),
+          unit: tempUnit,
         };
       } else if (deviceType === "Weight Scale") {
-        finalDataFields = { 
-          weight: Number(weight), 
-          unit: weightUnit 
+        finalDataFields = {
+          weight: Number(weight),
+          unit: weightUnit,
         };
       }
 
@@ -223,9 +243,11 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
           trainingService.saveFeedback({
             device_type: deviceType,
             ocr_prediction: predictionStr,
-            corrected_value: correctedStr
+            corrected_value: correctedStr,
           });
-          console.log(`[Feedback Logged] Corrected ${deviceType} from ${predictionStr} to ${correctedStr}`);
+          console.log(
+            `[Feedback Logged] Corrected ${deviceType} from ${predictionStr} to ${correctedStr}`,
+          );
         }
       } catch (err) {
         console.error("Error logging correction feedback:", err);
@@ -258,7 +280,8 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
     } else {
       return (
         <span className="inline-flex items-center gap-1 rounded-full bg-destructive/5 px-2.5 py-0.5 text-xs font-semibold text-destructive dark:bg-destructive/10 border border-destructive/20 animate-pulse">
-          <ShieldAlert className="h-3.5 w-3.5" /> Low Confidence ({Math.round(score * 100)}%) — please review values
+          <ShieldAlert className="h-3.5 w-3.5" /> Low Confidence ({Math.round(score * 100)}%) —
+          please review values
         </span>
       );
     }
@@ -280,7 +303,8 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
           <div className="p-3 bg-primary-soft/50 border border-primary/10 rounded-xl text-xs space-y-1 mt-2.5">
             <span className="font-bold text-foreground">Is this reading correct?</span>
             <p className="text-muted-foreground leading-normal">
-              Please double check the values. If the OCR was incorrect, adjust the fields below. We will use your corrections to train the scanner's AI.
+              Please double check the values. If the OCR was incorrect, adjust the fields below. We
+              will use your corrections to train the scanner's AI.
             </p>
           </div>
         </DialogHeader>
@@ -297,7 +321,12 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
         <div className="space-y-4 py-3">
           {/* Device Type Select Dropdown */}
           <div className="space-y-1.5">
-            <Label htmlFor="deviceTypeSelect" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Device Type</Label>
+            <Label
+              htmlFor="deviceTypeSelect"
+              className="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >
+              Device Type
+            </Label>
             <Select value={deviceType} onValueChange={(val: any) => setDeviceType(val)}>
               <SelectTrigger id="deviceTypeSelect" className="font-semibold text-foreground">
                 <SelectValue placeholder="Select Device Type" />
@@ -372,7 +401,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
                     onChange={(e) => setSystolic(Number(e.target.value))}
                     className="text-center text-lg font-bold"
                   />
-                  <span className="block text-[10px] text-center text-muted-foreground mt-1">mmHg</span>
+                  <span className="block text-[10px] text-center text-muted-foreground mt-1">
+                    mmHg
+                  </span>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -385,7 +416,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
                     onChange={(e) => setDiastolic(Number(e.target.value))}
                     className="text-center text-lg font-bold"
                   />
-                  <span className="block text-[10px] text-center text-muted-foreground mt-1">mmHg</span>
+                  <span className="block text-[10px] text-center text-muted-foreground mt-1">
+                    mmHg
+                  </span>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -398,7 +431,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
                     onChange={(e) => setBpPulse(Number(e.target.value))}
                     className="text-center text-lg font-bold"
                   />
-                  <span className="block text-[10px] text-center text-muted-foreground mt-1">bpm</span>
+                  <span className="block text-[10px] text-center text-muted-foreground mt-1">
+                    bpm
+                  </span>
                 </div>
               </div>
             </div>
@@ -416,7 +451,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
                     onChange={(e) => setSpo2(Number(e.target.value))}
                     className="text-center text-lg font-bold pr-8"
                   />
-                  <span className="absolute right-3 top-2.5 font-bold text-muted-foreground">%</span>
+                  <span className="absolute right-3 top-2.5 font-bold text-muted-foreground">
+                    %
+                  </span>
                 </div>
               </div>
               <div className="space-y-1.5">
@@ -429,7 +466,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
                     onChange={(e) => setOxPulse(Number(e.target.value))}
                     className="text-center text-lg font-bold pr-12"
                   />
-                  <span className="absolute right-3 top-2.5 font-bold text-muted-foreground text-xs">bpm</span>
+                  <span className="absolute right-3 top-2.5 font-bold text-muted-foreground text-xs">
+                    bpm
+                  </span>
                 </div>
               </div>
             </div>

@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { Camera, CameraOff, ChevronLeft, Sparkles, Upload, RefreshCw, AlertCircle, CheckCircle2, Settings } from "lucide-react";
+import {
+  Camera,
+  CameraOff,
+  ChevronLeft,
+  Sparkles,
+  Upload,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Settings,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/frontend/components/ui/button";
 import { performOcr, initOcrEngine, terminateOcrEngine } from "./ocrEngine";
@@ -8,6 +18,8 @@ import { detectDeviceAndReadings, ParsedReading } from "./deviceHeuristics";
 import { preprocessCanvasForOcr } from "./imageFilters";
 import { ConfirmationSheet } from "./ConfirmationSheet";
 import { scannerService } from "@/backend/services/scannerService";
+import { useGlucoseScanner } from "@/features/scanner/hooks/useGlucoseScanner";
+import { onCallPlusProfile } from "@/features/scanner/meterProfiles/onCallPlus";
 import {
   Dialog,
   DialogContent,
@@ -33,8 +45,16 @@ export default function SmartScannerView() {
   const [detectedReading, setDetectedReading] = useState<ParsedReading | null>(null);
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
-  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") || "" : ""));
-  const [visionApiKey, setVisionApiKey] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") || "" : ""));
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") || "" : "",
+  );
+  const [visionApiKey, setVisionApiKey] = useState<string>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") || "" : "",
+  );
+  const [scannerMode, setScannerMode] = useState<"general" | "on_call_plus">("general");
+
+  const { isReady: isGlucoseReady, scanFrame: scanGlucoseFrame } =
+    useGlucoseScanner(onCallPlusProfile);
 
   const handleSaveSettings = () => {
     let savedAny = false;
@@ -102,7 +122,6 @@ export default function SmartScannerView() {
 
         // Start processing frames and running OCR
         setOcrLog("Camera started. Align device screen inside target box.");
-        startOcrLoop();
       }
     } catch (err) {
       console.error("Camera access failed:", err);
@@ -157,7 +176,7 @@ export default function SmartScannerView() {
         0,
         0,
         canvas.width,
-        canvas.height
+        canvas.height,
       );
     }
 
@@ -170,6 +189,13 @@ export default function SmartScannerView() {
       animationFrameRef.current = requestAnimationFrame(drawFrameLoop);
     }
   }, [hasCameraAccess, isScanning]);
+
+  // Restart OCR loop when camera access, scanning state, or scanner mode changes
+  useEffect(() => {
+    if (hasCameraAccess && isScanning) {
+      startOcrLoop();
+    }
+  }, [hasCameraAccess, isScanning, scannerMode]);
 
   // Periodic OCR loop
   const startOcrLoop = () => {
@@ -192,57 +218,78 @@ export default function SmartScannerView() {
 
         setOcrLog("Analyzing frame...");
 
-        // Invoke OCR with raw color canvas
-        const ocrResult = await performOcr(processCanvas);
-
-        if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
-          setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
-          return;
-        }
-
-        if (ocrResult.text.trim()) {
-          // Parse values
-          const matchedReading = detectDeviceAndReadings(ocrResult);
-
-          if (matchedReading) {
-            const valHash = JSON.stringify(matchedReading.data);
-
-            if (matchedReading.confidence >= 0.85) {
-              setOcrLog(`✅ Reading detected successfully! (${matchedReading.deviceType})`);
-              stopCamera();
-              setDetectedReading({
-                ...matchedReading,
-                ocrSource: ocrResult.source,
-              } as any);
-              setConfirmOpen(true);
-              toast.success(`Success! Found ${matchedReading.deviceType}`);
-              setConsecutiveMatches(0);
-            } else {
-              // Wait for stabilization or prompt user to verify
-              if (valHash === lastMatchedVal) {
-                const matches = consecutiveMatches + 1;
-                setConsecutiveMatches(matches);
-                if (matches >= 2) {
-                  setOcrLog(`⚠️ Please verify the detected value. (${matchedReading.deviceType})`);
-                  stopCamera();
-                  setDetectedReading({
-                    ...matchedReading,
-                    ocrSource: ocrResult.source,
-                  } as any);
-                  setConfirmOpen(true);
-                  setConsecutiveMatches(0);
-                } else {
-                  setOcrLog(`🔍 Stabilizing reading... (${matchedReading.deviceType})`);
-                }
-              } else {
-                setLastMatchedVal(valHash);
-                setConsecutiveMatches(1);
-                setOcrLog(`🔍 Aligning details... (${matchedReading.deviceType})`);
-              }
-            }
+        if (scannerMode === "on_call_plus") {
+          const result = await scanGlucoseFrame(processCanvas);
+          if (result.success && result.value !== undefined) {
+            setOcrLog(`✅ Glucose detected: ${result.value} mg/dL`);
+            stopCamera();
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: result.confidence || 0.95,
+              data: { glucose: result.value, unit: result.unit || "mg/dL" },
+              rawText: `Offline Profile parsed: ${result.value}`,
+              ocrSource: "OCR (Offline Profile)",
+            } as any);
+            setConfirmOpen(true);
+            toast.success(`Glucose reading detected: ${result.value} mg/dL`);
           } else {
-            setOcrLog("📷 Align screen flat inside the box. Adjust lighting.");
-            setConsecutiveMatches(0);
+            setOcrLog(result.message || "Align LCD screen within target guide box.");
+          }
+        } else {
+          // Invoke OCR with raw color canvas
+          const ocrResult = await performOcr(processCanvas);
+
+          if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+            setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+            return;
+          }
+
+          if (ocrResult.text.trim()) {
+            // Parse values
+            const matchedReading = detectDeviceAndReadings(ocrResult);
+
+            if (matchedReading) {
+              const valHash = JSON.stringify(matchedReading.data);
+
+              if (matchedReading.confidence >= 0.85) {
+                setOcrLog(`✅ Reading detected successfully! (${matchedReading.deviceType})`);
+                stopCamera();
+                setDetectedReading({
+                  ...matchedReading,
+                  ocrSource: ocrResult.source,
+                } as any);
+                setConfirmOpen(true);
+                toast.success(`Success! Found ${matchedReading.deviceType}`);
+                setConsecutiveMatches(0);
+              } else {
+                // Wait for stabilization or prompt user to verify
+                if (valHash === lastMatchedVal) {
+                  const matches = consecutiveMatches + 1;
+                  setConsecutiveMatches(matches);
+                  if (matches >= 2) {
+                    setOcrLog(
+                      `⚠️ Please verify the detected value. (${matchedReading.deviceType})`,
+                    );
+                    stopCamera();
+                    setDetectedReading({
+                      ...matchedReading,
+                      ocrSource: ocrResult.source,
+                    } as any);
+                    setConfirmOpen(true);
+                    setConsecutiveMatches(0);
+                  } else {
+                    setOcrLog(`🔍 Stabilizing reading... (${matchedReading.deviceType})`);
+                  }
+                } else {
+                  setLastMatchedVal(valHash);
+                  setConsecutiveMatches(1);
+                  setOcrLog(`🔍 Aligning details... (${matchedReading.deviceType})`);
+                }
+              }
+            } else {
+              setOcrLog("📷 Align screen flat inside the box. Adjust lighting.");
+              setConsecutiveMatches(0);
+            }
           }
         }
       } catch (err) {
@@ -268,34 +315,58 @@ export default function SmartScannerView() {
 
       pCtx.drawImage(canvas, 0, 0);
 
-      const ocrResult = await performOcr(processCanvas);
-
-      if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
-        setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
-        toast.error(ocrResult.geminiResult.error);
-        startCamera();
-        return;
-      }
-
-      const matchedReading = detectDeviceAndReadings(ocrResult);
-
-      if (matchedReading) {
-        setDetectedReading({
-          ...matchedReading,
-          ocrSource: ocrResult.source,
-        } as any);
-        setConfirmOpen(true);
+      if (scannerMode === "on_call_plus") {
+        const result = await scanGlucoseFrame(processCanvas);
+        if (result.success && result.value !== undefined) {
+          setDetectedReading({
+            deviceType: "Blood Glucose Meter",
+            confidence: result.confidence || 0.95,
+            data: { glucose: result.value, unit: result.unit || "mg/dL" },
+            rawText: `Offline Profile parsed: ${result.value}`,
+            ocrSource: "OCR (Offline Profile)",
+          } as any);
+          setConfirmOpen(true);
+        } else {
+          setDetectedReading({
+            deviceType: "Blood Glucose Meter",
+            confidence: 0.3,
+            data: { glucose: 100, unit: "mg/dL" },
+            rawText: result.message || "Manual capture failed to extract reading.",
+            ocrSource: "OCR (Offline Profile)",
+          } as any);
+          setConfirmOpen(true);
+          toast.warning("Profile-based offline scan was inconclusive. Please verify values.");
+        }
       } else {
-        // Fallback: If heuristics failed, let user select device and enter values manually
-        setDetectedReading({
-          deviceType: "Blood Glucose Meter",
-          confidence: 0.3,
-          data: { glucose: 100, unit: "mg/dL" },
-          rawText: ocrResult.text,
-          ocrSource: ocrResult.source,
-        } as any);
-        setConfirmOpen(true);
-        toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
+        const ocrResult = await performOcr(processCanvas);
+
+        if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+          setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+          toast.error(ocrResult.geminiResult.error);
+          startCamera();
+          return;
+        }
+
+        const matchedReading = detectDeviceAndReadings(ocrResult);
+
+        if (matchedReading) {
+          setDetectedReading({
+            ...matchedReading,
+            ocrSource: ocrResult.source,
+          } as any);
+          setConfirmOpen(true);
+        } else {
+          // Fallback: If heuristics failed, let user select device and enter values manually
+          setDetectedReading({
+            deviceType: "Blood Glucose Meter",
+            confidence: 0.3,
+            data: { glucose: 100, unit: "mg/dL" },
+            rawText: ocrResult.text,
+            ocrSource: ocrResult.source,
+          } as any);
+          setConfirmOpen(true);
+          toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
+        }
       }
     } catch (err) {
       console.error(err);
@@ -325,34 +396,59 @@ export default function SmartScannerView() {
         ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
 
         setOcrLog("Running OCR on image...");
-        const ocrResult = await performOcr(tempCanvas);
 
-        if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
-          setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
-          toast.error(ocrResult.geminiResult.error);
-          startCamera();
-          return;
-        }
-
-        const matchedReading = detectDeviceAndReadings(ocrResult);
-
-        if (matchedReading) {
-          setDetectedReading({
-            ...matchedReading,
-            ocrSource: ocrResult.source,
-          } as any);
-          setConfirmOpen(true);
+        if (scannerMode === "on_call_plus") {
+          const result = await scanGlucoseFrame(tempCanvas);
+          if (result.success && result.value !== undefined) {
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: result.confidence || 0.95,
+              data: { glucose: result.value, unit: result.unit || "mg/dL" },
+              rawText: `Offline Profile parsed: ${result.value}`,
+              ocrSource: "OCR (Offline Profile)",
+            } as any);
+            setConfirmOpen(true);
+          } else {
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: 0.3,
+              data: { glucose: 100, unit: "mg/dL" },
+              rawText: result.message || "Upload scan failed to extract reading.",
+              ocrSource: "OCR (Offline Profile)",
+            } as any);
+            setConfirmOpen(true);
+            toast.warning("Profile-based offline scan was inconclusive. Please verify values.");
+          }
         } else {
-          // If heuristics failed, let user choose device manually
-          setDetectedReading({
-            deviceType: "Blood Glucose Meter", // default to Glucose
-            confidence: 0.3,
-            data: { glucose: 100, unit: "mg/dL" },
-            rawText: ocrResult.text,
-            ocrSource: ocrResult.source,
-          } as any);
-          setConfirmOpen(true);
-          toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
+          const ocrResult = await performOcr(tempCanvas);
+
+          if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+            setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+            toast.error(ocrResult.geminiResult.error);
+            startCamera();
+            return;
+          }
+
+          const matchedReading = detectDeviceAndReadings(ocrResult);
+
+          if (matchedReading) {
+            setDetectedReading({
+              ...matchedReading,
+              ocrSource: ocrResult.source,
+            } as any);
+            setConfirmOpen(true);
+          } else {
+            // If heuristics failed, let user choose device manually
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: 0.3,
+              data: { glucose: 100, unit: "mg/dL" },
+              rawText: ocrResult.text,
+              ocrSource: ocrResult.source,
+            } as any);
+            setConfirmOpen(true);
+            toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
+          }
         }
       };
 
@@ -378,7 +474,7 @@ export default function SmartScannerView() {
         throw res.error;
       }
 
-      if (res.data?.offline) {
+      if ((res.data as any)?.offline) {
         toast.info("Saved locally. Reading will sync when online.");
       } else {
         toast.success("Reading successfully saved!");
@@ -414,18 +510,45 @@ export default function SmartScannerView() {
           </button>
           <label className="flex h-10 w-10 items-center justify-center rounded-xl bg-zinc-800/80 hover:bg-zinc-700/80 transition-colors cursor-pointer">
             <Upload className="h-5 w-5 text-zinc-300" />
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
+            <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
           </label>
         </div>
       </header>
 
       {/* Main Camera Viewport */}
       <div className="relative flex-1 flex flex-col items-center justify-center overflow-hidden">
+        {/* Mode Selector */}
+        {hasCameraAccess && isScanning && (
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 flex bg-zinc-900/90 border border-zinc-800 rounded-full p-1 shadow-lg backdrop-blur-md pointer-events-auto">
+            <button
+              onClick={() => {
+                setScannerMode("general");
+                setOcrLog("General scanner mode activated.");
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                scannerMode === "general"
+                  ? "bg-primary text-primary-foreground shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              General Scanner
+            </button>
+            <button
+              onClick={() => {
+                setScannerMode("on_call_plus");
+                setOcrLog("On Call Plus offline scanner mode activated.");
+              }}
+              className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                scannerMode === "on_call_plus"
+                  ? "bg-amber-500 text-black shadow"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              On Call Plus
+            </button>
+          </div>
+        )}
+
         <video
           ref={videoRef}
           className={`absolute inset-0 h-full w-full object-cover ${hasCameraAccess ? "block" : "hidden"}`}
@@ -439,7 +562,8 @@ export default function SmartScannerView() {
             <div>
               <p className="text-lg font-bold text-zinc-200">Camera Access Required</p>
               <p className="text-xs text-zinc-500 max-w-xs mt-1">
-                Please allow camera access to scan your health devices, or choose a file from your photo library.
+                Please allow camera access to scan your health devices, or choose a file from your
+                photo library.
               </p>
             </div>
             <Button onClick={startCamera} variant="secondary" className="mt-2">
@@ -471,6 +595,23 @@ export default function SmartScannerView() {
               {/* Scanning laser animation line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_infinite] shadow-[0_0_8px_var(--primary)]" />
 
+              {/* Custom LCD guidelines crop box guide */}
+              {scannerMode === "on_call_plus" && (
+                <div
+                  className="absolute border border-dashed border-amber-400 rounded flex items-center justify-center"
+                  style={{
+                    top: `${onCallPlusProfile.screenCrop.topRatio * 100}%`,
+                    left: `${onCallPlusProfile.screenCrop.leftRatio * 100}%`,
+                    width: `${onCallPlusProfile.screenCrop.widthRatio * 100}%`,
+                    height: `${onCallPlusProfile.screenCrop.heightRatio * 100}%`,
+                  }}
+                >
+                  <span className="absolute bottom-1 right-1 text-[8px] bg-black/70 px-1 rounded text-amber-300 font-semibold uppercase tracking-wider">
+                    LCD Guide Box
+                  </span>
+                </div>
+              )}
+
               {consecutiveMatches > 0 && (
                 <div className="absolute inset-0 bg-primary/10 flex items-center justify-center animate-pulse">
                   <CheckCircle2 className="h-12 w-12 text-primary drop-shadow-md animate-[bounce_0.5s_infinite]" />
@@ -479,13 +620,28 @@ export default function SmartScannerView() {
             </div>
 
             <p className="text-xs text-zinc-400 mt-6 font-medium text-center max-w-xs">
-              Place device screen flat inside the green box.<br />Scanner detects values automatically.
+              {scannerMode === "on_call_plus" ? (
+                <>
+                  Align the LCD screen inside the dashed amber guide box.
+                  <br />
+                  The scanner will read the glucose value.
+                </>
+              ) : (
+                <>
+                  Place device screen flat inside the green box.
+                  <br />
+                  Scanner detects values automatically.
+                </>
+              )}
             </p>
           </div>
         )}
 
         {/* Live crop canvas - used for frame capturing (can be hidden or absolute/invisible) */}
-        <canvas ref={canvasRef} className="hidden absolute bottom-4 right-4 border border-zinc-700 w-24 h-16 rounded opacity-80" />
+        <canvas
+          ref={canvasRef}
+          className="hidden absolute bottom-4 right-4 border border-zinc-700 w-24 h-16 rounded opacity-80"
+        />
       </div>
 
       {/* Footer log / Action panel */}
@@ -505,7 +661,10 @@ export default function SmartScannerView() {
               <Camera className="mr-1.5 h-5 w-5" /> Take Snapshot
             </Button>
             <Button
-              onClick={() => { stopCamera(); navigate({ to: "/dashboard" }); }}
+              onClick={() => {
+                stopCamera();
+                navigate({ to: "/dashboard" });
+              }}
               size="lg"
               variant="secondary"
               className="px-6"
@@ -532,16 +691,20 @@ export default function SmartScannerView() {
         <DialogContent className="sm:max-w-md border-zinc-800 bg-zinc-900 text-white shadow-lg rounded-2xl">
           <DialogHeader className="space-y-1">
             <DialogTitle className="text-xl font-bold flex items-center gap-2 text-zinc-100">
-              <Settings className="h-6 w-6 text-primary animate-[spin_10s_linear_infinite]" /> Configure Vision AI
+              <Settings className="h-6 w-6 text-primary animate-[spin_10s_linear_infinite]" />{" "}
+              Configure Vision AI
             </DialogTitle>
             <DialogDescription className="text-sm text-zinc-400">
-              Provide an API Key to enable 100% accurate device scanning on your mobile phone or browser.
+              Provide an API Key to enable 100% accurate device scanning on your mobile phone or
+              browser.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-2">
-              <Label htmlFor="visionApiKeyInput" className="text-sm font-semibold text-zinc-300">Google Cloud Vision API Key</Label>
+              <Label htmlFor="visionApiKeyInput" className="text-sm font-semibold text-zinc-300">
+                Google Cloud Vision API Key
+              </Label>
               <Input
                 id="visionApiKeyInput"
                 type="password"
@@ -553,7 +716,9 @@ export default function SmartScannerView() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apiKeyInput" className="text-sm font-semibold text-zinc-300">Gemini API Key</Label>
+              <Label htmlFor="apiKeyInput" className="text-sm font-semibold text-zinc-300">
+                Gemini API Key
+              </Label>
               <Input
                 id="apiKeyInput"
                 type="password"
@@ -563,7 +728,8 @@ export default function SmartScannerView() {
                 className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-primary focus:ring-0"
               />
               <p className="text-[10px] text-zinc-500 leading-normal">
-                Your keys are stored securely on your own device and are only used to directly query Google's Vision/Gemini models for text extraction.
+                Your keys are stored securely on your own device and are only used to directly query
+                Google's Vision/Gemini models for text extraction.
               </p>
             </div>
           </div>

@@ -17,11 +17,16 @@ export function grayscale(ctx: CanvasRenderingContext2D, width: number, height: 
 }
 
 // Adjust contrast (-255 to 255). Recommended: 60 - 100
-export function adjustContrast(ctx: CanvasRenderingContext2D, width: number, height: number, contrast: number) {
+export function adjustContrast(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  contrast: number,
+) {
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-  
+
   for (let i = 0; i < data.length; i += 4) {
     data[i] = factor * (data[i] - 128) + 128; // R
     data[i + 1] = factor * (data[i + 1] - 128) + 128; // G
@@ -31,7 +36,12 @@ export function adjustContrast(ctx: CanvasRenderingContext2D, width: number, hei
 }
 
 // Apply simple global thresholding (binarization) - backup/fallback
-export function threshold(ctx: CanvasRenderingContext2D, width: number, height: number, limit = 128) {
+export function threshold(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  limit = 128,
+) {
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
   for (let i = 0; i < data.length; i += 4) {
@@ -53,7 +63,7 @@ export function adaptiveThreshold(
   width: number,
   height: number,
   boxSize = 19,
-  C = 12
+  C = 12,
 ) {
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
@@ -108,7 +118,7 @@ export function adaptiveThreshold(
       if (x0 > 0 && y0 > 0) sum += integral[idx_tl];
 
       const mean = sum / count;
-      const val = gray[idx] < (mean - C) ? 0 : 255;
+      const val = gray[idx] < mean - C ? 0 : 255;
 
       dst[dstOff] = val;
       dst[dstOff + 1] = val;
@@ -124,24 +134,22 @@ export function adaptiveThreshold(
 export function sharpen(ctx: CanvasRenderingContext2D, width: number, height: number) {
   const imgData = ctx.getImageData(0, 0, width, height);
   const data = imgData.data;
-  const weights = [
-     0, -1,  0,
-    -1,  5, -1,
-     0, -1,  0
-  ];
+  const weights = [0, -1, 0, -1, 5, -1, 0, -1, 0];
   const side = Math.round(Math.sqrt(weights.length));
   const halfSide = Math.floor(side / 2);
-  
+
   const output = ctx.createImageData(width, height);
   const dst = output.data;
-  
+
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
       const sy = y;
       const sx = x;
       const dstOff = (y * width + x) * 4;
-      
-      let r = 0, g = 0, b = 0;
+
+      let r = 0,
+        g = 0,
+        b = 0;
       for (let cy = 0; cy < side; cy++) {
         for (let cx = 0; cx < side; cx++) {
           const scy = Math.min(height - 1, Math.max(0, sy + cy - halfSide));
@@ -153,7 +161,7 @@ export function sharpen(ctx: CanvasRenderingContext2D, width: number, height: nu
           b += data[srcOff + 2] * wt;
         }
       }
-      
+
       dst[dstOff] = Math.min(255, Math.max(0, r));
       dst[dstOff + 1] = Math.min(255, Math.max(0, g));
       dst[dstOff + 2] = Math.min(255, Math.max(0, b));
@@ -170,7 +178,7 @@ export function preprocessCanvasForOcr(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const { width, height } = canvas;
-  
+
   grayscale(ctx, width, height);
   adjustContrast(ctx, width, height, 80);
   sharpen(ctx, width, height);

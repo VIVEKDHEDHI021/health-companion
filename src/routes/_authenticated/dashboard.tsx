@@ -134,7 +134,11 @@ function DashboardPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => navigate({ to: "/scanner" })} size="lg" className="gradient-primary text-primary-foreground shadow-soft">
+          <Button
+            onClick={() => navigate({ to: "/scanner" })}
+            size="lg"
+            className="gradient-primary text-primary-foreground shadow-soft"
+          >
             <Camera className="mr-1.5 h-4 w-4" /> Scan Device
           </Button>
           <Button onClick={() => setGlucoseOpen(true)} size="lg" variant="secondary">
