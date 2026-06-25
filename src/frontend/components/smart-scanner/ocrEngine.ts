@@ -59,7 +59,64 @@ export async function terminateOcrEngine(): Promise<void> {
  * otherwise runs Tesseract.js locally inside a Web Worker.
  */
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
-  // Option 0: Cloud Gemini AI Vision check (highest accuracy)
+  // Option 0: Direct Gemini AI Vision call from client (highest accuracy, works on both Web and Mobile Capacitor via VITE_GEMINI_API_KEY)
+  try {
+    const clientApiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (clientApiKey) {
+      const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
+      console.log("[OCR] Calling Gemini Vision API directly from client...");
+      
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${clientApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: "Analyze this medical device screen image. Identify the device type (one of: 'Blood Glucose Meter', 'Blood Pressure Monitor', 'Pulse Oximeter', 'Thermometer', 'Weight Scale'). Extract the readings, units, and confidence. Return ONLY a JSON object matching this schema: { \"deviceType\": string, \"data\": { \"glucose\"?: number, \"systolic\"?: number, \"diastolic\"?: number, \"pulse\"?: number, \"spo2\"?: number, \"temperature\"?: number, \"weight\"?: number, \"unit\"?: string }, \"confidence\": number }. Do not include any markdown formatting, backticks, or comments.",
+                  },
+                  {
+                    inlineData: {
+                      mimeType: "image/jpeg",
+                      data: base64Data,
+                    },
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const resJson = await response.json();
+        const responseText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
+        const cleanText = responseText.replace(/```json|```/g, "").trim();
+        const result = JSON.parse(cleanText);
+
+        if (result && result.deviceType && result.confidence !== undefined) {
+          console.log("[OCR] Received direct client-side result from Gemini AI Vision:", result);
+          return {
+            text: `Gemini parsed: ${result.deviceType}`,
+            blocks: [],
+            source: "Gemini AI",
+            geminiResult: result,
+          };
+        }
+      } else {
+        console.warn("[OCR] Direct Gemini API response not OK:", await response.text());
+      }
+    }
+  } catch (err) {
+    console.warn("[OCR] Direct client Gemini call failed, trying relative server endpoint:", err);
+  }
+
+  // Option 0.5: Cloud Gemini AI Vision check (server-side proxy fallback for web environment)
   try {
     const base64Data = canvas.toDataURL("image/jpeg", 0.85);
     const response = await fetch("/api/analyze-image", {
@@ -73,7 +130,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
     if (response.ok) {
       const result = await response.json();
       if (result && result.deviceType && result.confidence !== undefined) {
-        console.log("[OCR] Received result from Gemini AI Vision:", result);
+        console.log("[OCR] Received result from server-side Gemini proxy:", result);
         return {
           text: `Gemini parsed: ${result.deviceType}`,
           blocks: [],
@@ -83,7 +140,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
       }
     }
   } catch (err) {
-    console.warn("[OCR] Cloud Gemini AI analysis failed, falling back to local OCR:", err);
+    console.warn("[OCR] Cloud Gemini AI analysis proxy failed, falling back to local OCR:", err);
   }
 
   // Option 1: Native Capacitor OCR (e.g. Google ML Kit / Apple Vision)
