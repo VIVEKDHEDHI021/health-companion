@@ -48,7 +48,10 @@ export async function terminateOcrEngine(): Promise<void> {
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
   // Option 0.1: Direct Google Cloud Vision API call from client (highest accuracy OCR)
   try {
-    const clientVisionApiKey = (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") : null) || import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
+    const clientVisionApiKey = 
+      (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") : null) || 
+      import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY ||
+      import.meta.env.VITE_GOOGLE_VISION_API_KEY;
     if (clientVisionApiKey) {
       const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
       console.log("[OCR] Calling Google Cloud Vision API directly from client...");

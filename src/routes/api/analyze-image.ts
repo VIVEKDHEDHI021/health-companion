@@ -14,7 +14,11 @@ export const Route = createFileRoute("/api/analyze-image")({
           // Strip base64 headers
           const base64Data = image.replace(/^data:image\/\w+;base64,/, "");
 
-          const visionApiKey = process.env.GOOGLE_CLOUD_VISION_API_KEY || process.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
+          const visionApiKey = 
+            process.env.GOOGLE_CLOUD_VISION_API_KEY || 
+            process.env.VITE_GOOGLE_CLOUD_VISION_API_KEY ||
+            process.env.GOOGLE_VISION_API_KEY ||
+            process.env.VITE_GOOGLE_VISION_API_KEY;
           
           if (visionApiKey) {
             console.log("[analyze-image] Sending request to Google Cloud Vision API...");
