@@ -40,40 +40,6 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
   const [open, setOpen] = useState(false);
-  const [pendingSyncCount, setPendingSyncCount] = useState(0);
-
-  // Background offline scan sync listener
-  useEffect(() => {
-    if (!user) return;
-
-    const checkAndSync = async () => {
-      const pending = scannerService.getPendingScans();
-      setPendingSyncCount(pending.length);
-
-      if (navigator.onLine && pending.length > 0) {
-        toast.info(`Syncing ${pending.length} offline readings...`);
-        try {
-          const result = await scannerService.syncPendingScans();
-          if (result.count > 0) {
-            toast.success(`Synced ${result.count} offline readings to cloud!`);
-          }
-          // Refresh count
-          setPendingSyncCount(scannerService.getPendingScans().length);
-        } catch (err) {
-          console.error("Sync error:", err);
-        }
-      }
-    };
-
-    checkAndSync();
-    window.addEventListener("online", checkAndSync);
-    const interval = setInterval(checkAndSync, 12000); // check periodically
-
-    return () => {
-      window.removeEventListener("online", checkAndSync);
-      clearInterval(interval);
-    };
-  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -123,12 +89,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
-            {/* Sync Badge */}
-            {pendingSyncCount > 0 && (
-              <span className="flex items-center gap-1 text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-1 rounded-full animate-pulse">
-                <CloudOff className="h-3 w-3" /> Offline ({pendingSyncCount})
-              </span>
-            )}
             
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}

@@ -23,17 +23,9 @@ export interface ScanReadingPayload {
   data: ScanReadingData;
 }
 
-const LOCAL_STORAGE_KEY = "glucolab_pending_scans";
-
 export const scannerService = {
-  // Save scan reading (handles database and auto-mapping to legacy tables)
+  // Save scan reading directly to database
   async saveScanReading(payload: ScanReadingPayload) {
-    // Check if offline
-    if (typeof window !== "undefined" && !navigator.onLine) {
-      this.saveToLocalStorage(payload);
-      return { data: { offline: true }, error: null };
-    }
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not authenticated");
@@ -88,82 +80,21 @@ export const scannerService = {
       return { data: scanInsert.data, error: null };
     } catch (err: any) {
       console.error("Error saving scan reading:", err);
-      // Fallback: Save locally if database insert failed due to network glitch
-      this.saveToLocalStorage(payload);
       return { data: null, error: err };
     }
   },
 
-  // Save scan locally for offline mode
+  // Stubs to prevent compilation breaks in legacy imports
   saveToLocalStorage(payload: ScanReadingPayload) {
-    if (typeof window === "undefined") return;
-    try {
-      const existing = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const items = existing ? JSON.parse(existing) : [];
-      items.push({
-        ...payload,
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        sync_status: "pending"
-      });
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
-    } catch (e) {
-      console.error("Failed to save scan to local storage:", e);
-    }
+    // Disabled
   },
 
-  // Get pending offline scans
   getPendingScans(): (ScanReadingPayload & { id: string; sync_status: string })[] {
-    if (typeof window === "undefined") return [];
-    try {
-      const existing = localStorage.getItem(LOCAL_STORAGE_KEY);
-      return existing ? JSON.parse(existing) : [];
-    } catch (e) {
-      console.error("Failed to read pending scans:", e);
-      return [];
-    }
+    return [];
   },
 
-  // Sync pending scans to server
-  async syncPendingScans(onProgress?: (index: number, total: number) => void) {
-    if (typeof window === "undefined") return { success: true, count: 0 };
-    const pending = this.getPendingScans();
-    if (pending.length === 0) return { success: true, count: 0 };
-
-    console.log(`[SYNC] Syncing ${pending.length} pending scans...`);
-    let successCount = 0;
-    const remaining: typeof pending = [];
-
-    for (let i = 0; i < pending.length; i++) {
-      onProgress?.(i, pending.length);
-      const item = pending[i];
-      // strip local uuid/status metadata before saving
-      const payload: ScanReadingPayload = {
-        device_type: item.device_type,
-        reading_date: item.reading_date,
-        reading_time: item.reading_time,
-        confidence: item.confidence,
-        ocr_source: item.ocr_source,
-        image_url: item.image_url,
-        notes: item.notes,
-        data: item.data,
-      };
-
-      const res = await this.saveScanReading(payload);
-      if (!res.error && (!res.data || !("offline" in res.data))) {
-        successCount++;
-      } else {
-        remaining.push(item);
-      }
-    }
-
-    if (remaining.length > 0) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(remaining));
-    } else {
-      localStorage.removeItem(LOCAL_STORAGE_KEY);
-    }
-
-    return { success: remaining.length === 0, count: successCount };
+  async syncPendingScans() {
+    return { success: true, count: 0 };
   },
 
   // Fetch user's scan history

@@ -82,7 +82,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
       // Smart pre-population for all possible device types
       setGlucose(d.glucose || (num0 >= 30 && num0 <= 400 ? num0 : 100));
       setGlucoseUnit(d.unit || "mg/dL");
-      setGlucoseType("Fasting");
+      setGlucoseType(d.glucose_reading_type || glucoseType || "Fasting");
 
       setSystolic(d.systolic || (num0 >= 70 && num0 <= 200 ? num0 : 120));
       setDiastolic(d.diastolic || (num1 >= 40 && num1 <= 120 ? num1 : 80));
