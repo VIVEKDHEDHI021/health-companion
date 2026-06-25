@@ -1,4 +1,4 @@
-import { OcrResult, OcrBlock } from "./ocrEngine";
+import { OcrResult, OcrBlock } from "./types";
 
 export interface ParsedReading {
   deviceType: "Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale";

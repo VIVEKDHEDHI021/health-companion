@@ -34,18 +34,32 @@ export default function SmartScannerView() {
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
   const [settingsOpen, setSettingsOpen] = useState<boolean>(false);
   const [geminiApiKey, setGeminiApiKey] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") || "" : ""));
+  const [visionApiKey, setVisionApiKey] = useState<string>(() => (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") || "" : ""));
 
   const handleSaveSettings = () => {
+    let savedAny = false;
     if (geminiApiKey.trim()) {
       localStorage.setItem("user_gemini_api_key", geminiApiKey.trim());
-      toast.success("API key saved locally!");
+      savedAny = true;
     } else {
       localStorage.removeItem("user_gemini_api_key");
-      toast.info("API key cleared.");
+    }
+
+    if (visionApiKey.trim()) {
+      localStorage.setItem("user_vision_api_key", visionApiKey.trim());
+      savedAny = true;
+    } else {
+      localStorage.removeItem("user_vision_api_key");
+    }
+
+    if (savedAny) {
+      toast.success("API key(s) saved locally!");
+    } else {
+      toast.info("API key(s) cleared.");
     }
     setSettingsOpen(false);
   };
-  
+
   // High confidence automatic capture states
   const [consecutiveMatches, setConsecutiveMatches] = useState<number>(0);
   const [lastMatchedVal, setLastMatchedVal] = useState<string>("");
@@ -85,7 +99,7 @@ export default function SmartScannerView() {
         videoRef.current.srcObject = stream;
         videoRef.current.setAttribute("playsinline", "true"); // required for iOS
         videoRef.current.play();
-        
+
         // Start processing frames and running OCR
         setOcrLog("Camera started. Align device screen inside target box.");
         startOcrLoop();
@@ -160,7 +174,7 @@ export default function SmartScannerView() {
   // Periodic OCR loop
   const startOcrLoop = () => {
     if (ocrIntervalRef.current) clearInterval(ocrIntervalRef.current);
-    
+
     ocrIntervalRef.current = setInterval(async () => {
       const canvas = canvasRef.current;
       if (!canvas || !isScanning) return;
@@ -177,7 +191,7 @@ export default function SmartScannerView() {
         pCtx.drawImage(canvas, 0, 0);
 
         setOcrLog("Analyzing frame...");
-        
+
         // Invoke OCR with raw color canvas
         const ocrResult = await performOcr(processCanvas);
 
@@ -185,11 +199,11 @@ export default function SmartScannerView() {
           setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
           return;
         }
-        
+
         if (ocrResult.text.trim()) {
           // Parse values
           const matchedReading = detectDeviceAndReadings(ocrResult);
-          
+
           if (matchedReading) {
             const valHash = JSON.stringify(matchedReading.data);
 
@@ -341,7 +355,7 @@ export default function SmartScannerView() {
           toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
         }
       };
-      
+
       const reader = new FileReader();
       reader.onload = (event) => {
         if (event.target?.result) {
@@ -363,13 +377,13 @@ export default function SmartScannerView() {
       if (res.error) {
         throw res.error;
       }
-      
+
       if (res.data?.offline) {
         toast.info("Saved locally. Reading will sync when online.");
       } else {
         toast.success("Reading successfully saved!");
       }
-      
+
       navigate({ to: "/dashboard" });
     } catch (err: any) {
       console.error(err);
@@ -456,7 +470,7 @@ export default function SmartScannerView() {
 
               {/* Scanning laser animation line */}
               <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent animate-[scan_2s_infinite] shadow-[0_0_8px_var(--primary)]" />
-              
+
               {consecutiveMatches > 0 && (
                 <div className="absolute inset-0 bg-primary/10 flex items-center justify-center animate-pulse">
                   <CheckCircle2 className="h-12 w-12 text-primary drop-shadow-md animate-[bounce_0.5s_infinite]" />
@@ -521,23 +535,35 @@ export default function SmartScannerView() {
               <Settings className="h-6 w-6 text-primary animate-[spin_10s_linear_infinite]" /> Configure Vision AI
             </DialogTitle>
             <DialogDescription className="text-sm text-zinc-400">
-              Provide a Gemini API Key to enable 100% accurate device scanning on your mobile phone or browser.
+              Provide an API Key to enable 100% accurate device scanning on your mobile phone or browser.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-3">
             <div className="space-y-2">
+              <Label htmlFor="visionApiKeyInput" className="text-sm font-semibold text-zinc-300">Google Cloud Vision API Key</Label>
+              <Input
+                id="visionApiKeyInput"
+                type="password"
+                placeholder="Paste Cloud Vision API Key (starts with AIzaSy...)"
+                value={visionApiKey}
+                onChange={(e) => setVisionApiKey(e.target.value)}
+                className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-primary focus:ring-0"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="apiKeyInput" className="text-sm font-semibold text-zinc-300">Gemini API Key</Label>
               <Input
                 id="apiKeyInput"
                 type="password"
-                placeholder="Paste API Key (starts with AIzaSy...)"
+                placeholder="Paste Gemini API Key (starts with AIzaSy...)"
                 value={geminiApiKey}
                 onChange={(e) => setGeminiApiKey(e.target.value)}
                 className="bg-zinc-950 border-zinc-800 text-zinc-100 placeholder:text-zinc-600 focus:border-primary focus:ring-0"
               />
               <p className="text-[10px] text-zinc-500 leading-normal">
-                Your key is stored securely on your own device and is only used to directly query Google's Vision models for text extraction.
+                Your keys are stored securely on your own device and are only used to directly query Google's Vision/Gemini models for text extraction.
               </p>
             </div>
           </div>
@@ -546,21 +572,23 @@ export default function SmartScannerView() {
             <Button
               onClick={() => {
                 setGeminiApiKey("");
+                setVisionApiKey("");
                 localStorage.removeItem("user_gemini_api_key");
-                toast.info("API key cleared.");
+                localStorage.removeItem("user_vision_api_key");
+                toast.info("API keys cleared.");
                 setSettingsOpen(false);
               }}
               variant="ghost"
               className="text-zinc-400 hover:text-white"
             >
-              Clear Key
+              Clear Keys
             </Button>
             <div className="flex gap-2">
               <Button onClick={() => setSettingsOpen(false)} variant="secondary">
                 Cancel
               </Button>
               <Button onClick={handleSaveSettings} className="gradient-primary">
-                Save Key
+                Save Keys
               </Button>
             </div>
           </DialogFooter>

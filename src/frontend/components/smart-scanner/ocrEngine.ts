@@ -1,22 +1,8 @@
 import { createWorker } from "tesseract.js";
 import { Capacitor } from "@capacitor/core";
 import { preprocessCanvasForOcr } from "./imageFilters";
+import { OcrBlock, OcrResult } from "./types";
 
-export interface OcrBlock {
-  text: string;
-  confidence: number; // 0 to 100
-  x: number;          // Left bound in pixels
-  y: number;          // Top bound in pixels
-  width: number;
-  height: number;
-}
-
-export interface OcrResult {
-  text: string;
-  blocks: OcrBlock[];
-  source: "Tesseract.js" | "Google ML Kit" | "Gemini AI";
-  geminiResult?: any;
-}
 
 let tesseractWorker: any = null;
 let isInitializing = false;
@@ -60,6 +46,73 @@ export async function terminateOcrEngine(): Promise<void> {
  * otherwise runs Tesseract.js locally inside a Web Worker.
  */
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
+  // Option 0.1: Direct Google Cloud Vision API call from client (highest accuracy OCR)
+  try {
+    const clientVisionApiKey = (typeof window !== "undefined" ? localStorage.getItem("user_vision_api_key") : null) || import.meta.env.VITE_GOOGLE_CLOUD_VISION_API_KEY;
+    if (clientVisionApiKey) {
+      const base64Data = canvas.toDataURL("image/jpeg", 0.85).replace(/^data:image\/\w+;base64,/, "");
+      console.log("[OCR] Calling Google Cloud Vision API directly from client...");
+      
+      const response = await fetch(
+        `https://vision.googleapis.com/v1/images:annotate?key=${clientVisionApiKey}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            requests: [
+              {
+                image: {
+                  content: base64Data,
+                },
+                features: [
+                  {
+                    type: "DOCUMENT_TEXT_DETECTION",
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
+
+      if (response.ok) {
+        const resJson = await response.json();
+        const annotations = resJson.responses?.[0]?.textAnnotations || [];
+        const fullText = annotations[0]?.description || "";
+        
+        const blocks: OcrBlock[] = annotations.slice(1).map((ann: any) => {
+          const vertices = ann.boundingPoly?.vertices || [];
+          const x = vertices[0]?.x ?? 0;
+          const y = vertices[0]?.y ?? 0;
+          const x1 = vertices[1]?.x ?? x;
+          const y2 = vertices[2]?.y ?? y;
+          return {
+            text: ann.description || "",
+            confidence: 90,
+            x,
+            y,
+            width: Math.max(0, x1 - x),
+            height: Math.max(0, y2 - y),
+          };
+        });
+
+        console.log("[OCR] Received direct client-side result from Google Cloud Vision");
+        return {
+          text: fullText,
+          blocks,
+          source: "Google Cloud Vision",
+        };
+      } else {
+        const errText = await response.text();
+        console.warn("[OCR] Direct Google Cloud Vision API response not OK:", errText);
+      }
+    }
+  } catch (err: any) {
+    console.warn("[OCR] Direct client Google Cloud Vision call failed, trying next option:", err);
+  }
+
   // Option 0: Direct Gemini AI Vision call from client (highest accuracy, works on both Web and Mobile Capacitor via VITE_GEMINI_API_KEY or Local Settings)
   try {
     const clientApiKey = (typeof window !== "undefined" ? localStorage.getItem("user_gemini_api_key") : null) || import.meta.env.VITE_GEMINI_API_KEY;
