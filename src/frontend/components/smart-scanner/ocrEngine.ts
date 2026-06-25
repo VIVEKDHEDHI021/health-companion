@@ -1,5 +1,6 @@
 import { createWorker } from "tesseract.js";
 import { Capacitor } from "@capacitor/core";
+import { preprocessCanvasForOcr } from "./imageFilters";
 
 export interface OcrBlock {
   text: string;
@@ -78,7 +79,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
               {
                 parts: [
                   {
-                    text: "Analyze this medical device screen image. Identify the device type (one of: 'Blood Glucose Meter', 'Blood Pressure Monitor', 'Pulse Oximeter', 'Thermometer', 'Weight Scale'). Extract the readings, units, and confidence. Return ONLY a JSON object matching this schema: { \"deviceType\": string, \"data\": { \"glucose\"?: number, \"systolic\"?: number, \"diastolic\"?: number, \"pulse\"?: number, \"spo2\"?: number, \"temperature\"?: number, \"weight\"?: number, \"unit\"?: string }, \"confidence\": number }. Do not include any markdown formatting, backticks, or comments.",
+                    text: "Identify the medical device in this image and extract its screen reading values. You must return a single JSON object matching this schema exactly: { \"deviceType\": \"Blood Glucose Meter\" | \"Blood Pressure Monitor\" | \"Pulse Oximeter\" | \"Thermometer\" | \"Weight Scale\", \"data\": { \"glucose\"?: number, \"systolic\"?: number, \"diastolic\"?: number, \"pulse\"?: number, \"spo2\"?: number, \"temperature\"?: number, \"weight\"?: number, \"unit\"?: string }, \"confidence\": number }. The confidence should reflect your detection certainty between 0.0 and 1.0. Do not include markdown codeblocks, comments, or backticks; output only raw JSON.",
                   },
                   {
                     inlineData: {
@@ -89,6 +90,9 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
                 ],
               },
             ],
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
           }),
         }
       );
@@ -96,8 +100,7 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
       if (response.ok) {
         const resJson = await response.json();
         const responseText = resJson.candidates?.[0]?.content?.parts?.[0]?.text || "";
-        const cleanText = responseText.replace(/```json|```/g, "").trim();
-        const result = JSON.parse(cleanText);
+        const result = JSON.parse(responseText.trim());
 
         if (result && result.deviceType && result.confidence !== undefined) {
           console.log("[OCR] Received direct client-side result from Gemini AI Vision:", result);
@@ -109,10 +112,27 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
           };
         }
       } else {
-        console.warn("[OCR] Direct Gemini API response not OK:", await response.text());
+        const errText = await response.text();
+        console.warn("[OCR] Direct Gemini API response not OK:", errText);
+        let errorMsg = "Gemini API Error";
+        try {
+          const parsedErr = JSON.parse(errText);
+          errorMsg = parsedErr.error?.message || errorMsg;
+        } catch (_) {}
+        return {
+          text: "",
+          blocks: [],
+          source: "Gemini AI",
+          geminiResult: {
+            deviceType: "Blood Glucose Meter",
+            confidence: 0.0,
+            data: {},
+            error: errorMsg
+          }
+        };
       }
     }
-  } catch (err) {
+  } catch (err: any) {
     console.warn("[OCR] Direct client Gemini call failed, trying relative server endpoint:", err);
   }
 
@@ -194,6 +214,16 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
   }
 
   // Option 2: Tesseract.js Web/Mobile Fallback
+  // Create a copy of canvas and run binarization filter on it for better local OCR results
+  const filterCanvas = document.createElement("canvas");
+  filterCanvas.width = canvas.width;
+  filterCanvas.height = canvas.height;
+  const fCtx = filterCanvas.getContext("2d");
+  if (fCtx) {
+    fCtx.drawImage(canvas, 0, 0);
+    preprocessCanvasForOcr(filterCanvas);
+  }
+
   if (!tesseractWorker) {
     await initOcrEngine();
   }
@@ -202,8 +232,8 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
     throw new Error("OCR engine is not ready.");
   }
 
-  // Run recognition on canvas
-  const { data } = await tesseractWorker.recognize(canvas);
+  // Run recognition on binarized filterCanvas
+  const { data } = await tesseractWorker.recognize(filterCanvas);
   const blocks: OcrBlock[] = (data.words || []).map((word: any) => ({
     text: word.text,
     confidence: word.confidence || 0,

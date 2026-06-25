@@ -173,16 +173,18 @@ export default function SmartScannerView() {
         const pCtx = processCanvas.getContext("2d");
         if (!pCtx) return;
 
-        // Copy current frame
+        // Copy current frame (raw colored image)
         pCtx.drawImage(canvas, 0, 0);
-
-        // Preprocess (grayscale, contrast, binarize)
-        preprocessCanvasForOcr(processCanvas);
 
         setOcrLog("Analyzing frame...");
         
-        // Invoke OCR
+        // Invoke OCR with raw color canvas
         const ocrResult = await performOcr(processCanvas);
+
+        if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+          setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+          return;
+        }
         
         if (ocrResult.text.trim()) {
           // Parse values
@@ -251,9 +253,16 @@ export default function SmartScannerView() {
       if (!pCtx) return;
 
       pCtx.drawImage(canvas, 0, 0);
-      preprocessCanvasForOcr(processCanvas);
 
       const ocrResult = await performOcr(processCanvas);
+
+      if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+        setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+        toast.error(ocrResult.geminiResult.error);
+        startCamera();
+        return;
+      }
+
       const matchedReading = detectDeviceAndReadings(ocrResult);
 
       if (matchedReading) {
@@ -300,12 +309,17 @@ export default function SmartScannerView() {
 
         // Draw image stretched to scanning bounds
         ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
-        
-        // Enhance
-        preprocessCanvasForOcr(tempCanvas);
 
         setOcrLog("Running OCR on image...");
         const ocrResult = await performOcr(tempCanvas);
+
+        if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+          setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+          toast.error(ocrResult.geminiResult.error);
+          startCamera();
+          return;
+        }
+
         const matchedReading = detectDeviceAndReadings(ocrResult);
 
         if (matchedReading) {
