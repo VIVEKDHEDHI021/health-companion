@@ -445,7 +445,10 @@ export function detectDeviceAndReadings(ocrInput: OcrResult | string): ParsedRea
 export function validatePhysiologicalRange(deviceType: string, data: any): { valid: boolean; warning?: string } {
   switch (deviceType) {
     case "Blood Glucose Meter":
-      if (data.glucose < 40 || data.glucose > 400) {
+      const isMmol = data.unit?.toLowerCase() === "mmol/l";
+      const lowLimit = isMmol ? 2.2 : 40;
+      const highLimit = isMmol ? 22.2 : 400;
+      if (data.glucose < lowLimit || data.glucose > highLimit) {
         return { valid: false, warning: `Glucose reading (${data.glucose} ${data.unit}) is in a critical range. Please confirm.` };
       }
       break;
