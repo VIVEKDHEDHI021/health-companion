@@ -52,6 +52,17 @@ interface NumberCandidate {
  * Main parser entry point. Checks all devices and returns the match with highest confidence.
  */
 export function detectDeviceAndReadings(ocrInput: OcrResult | string): ParsedReading | null {
+  // Check if we already have a parsed result from Gemini AI Vision
+  if (typeof ocrInput !== "string" && (ocrInput as any).geminiResult) {
+    const gr = (ocrInput as any).geminiResult;
+    return {
+      deviceType: gr.deviceType,
+      confidence: gr.confidence,
+      data: gr.data,
+      rawText: ocrInput.text,
+    };
+  }
+
   let text = "";
   let blocks: OcrBlock[] = [];
   

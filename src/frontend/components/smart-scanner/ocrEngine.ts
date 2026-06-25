@@ -13,7 +13,8 @@ export interface OcrBlock {
 export interface OcrResult {
   text: string;
   blocks: OcrBlock[];
-  source: "Tesseract.js" | "Google ML Kit";
+  source: "Tesseract.js" | "Google ML Kit" | "Gemini AI";
+  geminiResult?: any;
 }
 
 let tesseractWorker: any = null;
@@ -58,6 +59,33 @@ export async function terminateOcrEngine(): Promise<void> {
  * otherwise runs Tesseract.js locally inside a Web Worker.
  */
 export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> {
+  // Option 0: Cloud Gemini AI Vision check (highest accuracy)
+  try {
+    const base64Data = canvas.toDataURL("image/jpeg", 0.85);
+    const response = await fetch("/api/analyze-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: base64Data }),
+    });
+
+    if (response.ok) {
+      const result = await response.json();
+      if (result && result.deviceType && result.confidence !== undefined) {
+        console.log("[OCR] Received result from Gemini AI Vision:", result);
+        return {
+          text: `Gemini parsed: ${result.deviceType}`,
+          blocks: [],
+          source: "Gemini AI",
+          geminiResult: result,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn("[OCR] Cloud Gemini AI analysis failed, falling back to local OCR:", err);
+  }
+
   // Option 1: Native Capacitor OCR (e.g. Google ML Kit / Apple Vision)
   if (Capacitor.isNativePlatform()) {
     try {

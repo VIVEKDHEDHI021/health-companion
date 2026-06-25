@@ -16,6 +16,7 @@ import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApiSendPushRouteImport } from './routes/api/send-push'
+import { Route as ApiAnalyzeImageRouteImport } from './routes/api/analyze-image'
 import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
 import { Route as AuthenticatedScannerRouteImport } from './routes/_authenticated/scanner'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
@@ -56,6 +57,11 @@ const IndexRoute = IndexRouteImport.update({
 const ApiSendPushRoute = ApiSendPushRouteImport.update({
   id: '/api/send-push',
   path: '/api/send-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyzeImageRoute = ApiAnalyzeImageRouteImport.update({
+  id: '/api/analyze-image',
+  path: '/api/analyze-image',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/reports': typeof AuthenticatedReportsRoute
   '/scanner': typeof AuthenticatedScannerRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
   '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/reports': typeof AuthenticatedReportsRoute
   '/scanner': typeof AuthenticatedScannerRoute
   '/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
   '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
   '/_authenticated/scanner': typeof AuthenticatedScannerRoute
   '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
   '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scanner'
     | '/training'
+    | '/api/analyze-image'
     | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesByTo: FileRoutesByTo
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/reports'
     | '/scanner'
     | '/training'
+    | '/api/analyze-image'
     | '/api/send-push'
     | '/api/admin/reset-password'
   id:
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/_authenticated/reports'
     | '/_authenticated/scanner'
     | '/_authenticated/training'
+    | '/api/analyze-image'
     | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesById: FileRoutesById
@@ -197,6 +209,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiAnalyzeImageRoute: typeof ApiAnalyzeImageRoute
   ApiSendPushRoute: typeof ApiSendPushRoute
   ApiAdminResetPasswordRoute: typeof ApiAdminResetPasswordRoute
 }
@@ -250,6 +263,13 @@ declare module '@tanstack/react-router' {
       path: '/api/send-push'
       fullPath: '/api/send-push'
       preLoaderRoute: typeof ApiSendPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analyze-image': {
+      id: '/api/analyze-image'
+      path: '/api/analyze-image'
+      fullPath: '/api/analyze-image'
+      preLoaderRoute: typeof ApiAnalyzeImageRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/training': {
@@ -333,6 +353,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiAnalyzeImageRoute: ApiAnalyzeImageRoute,
   ApiSendPushRoute: ApiSendPushRoute,
   ApiAdminResetPasswordRoute: ApiAdminResetPasswordRoute,
 }
