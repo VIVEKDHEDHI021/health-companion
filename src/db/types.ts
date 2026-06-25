@@ -172,7 +172,55 @@ export type Database = {
           notes?: string | null;
           updated_at?: string;
           user_id?: string;
-          weight_kg?: number;
+          weight_kg: number;
+        };
+        Relationships: [];
+      };
+      smart_scan_readings: {
+        Row: {
+          id: string;
+          user_id: string;
+          device_type: string;
+          reading_date: string;
+          reading_time: string;
+          confidence: number;
+          ocr_source: string;
+          image_url: string | null;
+          notes: string | null;
+          sync_status: string;
+          data: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          device_type: string;
+          reading_date: string;
+          reading_time: string;
+          confidence: number;
+          ocr_source: string;
+          image_url?: string | null;
+          notes?: string | null;
+          sync_status?: string;
+          data: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          device_type?: string;
+          reading_date?: string;
+          reading_time?: string;
+          confidence?: number;
+          ocr_source?: string;
+          image_url?: string | null;
+          notes?: string | null;
+          sync_status?: string;
+          data?: Json;
+          created_at?: string;
+          updated_at?: string;
         };
         Relationships: [];
       };

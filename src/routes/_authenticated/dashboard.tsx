@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import {
   Activity,
@@ -9,6 +9,7 @@ import {
   TrendingUp,
   AlertCircle,
   Clock,
+  Camera,
 } from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
 import {
@@ -45,6 +46,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function DashboardPage() {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [glucose, setGlucose] = useState<GlucoseEntry[]>([]);
   const [insulin, setInsulin] = useState<InsulinEntry[]>([]);
@@ -132,7 +134,10 @@ function DashboardPage() {
           </h1>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={() => setGlucoseOpen(true)} size="lg" className="shadow-soft">
+          <Button onClick={() => navigate({ to: "/scanner" })} size="lg" className="gradient-primary text-primary-foreground shadow-soft">
+            <Camera className="mr-1.5 h-4 w-4" /> Scan Device
+          </Button>
+          <Button onClick={() => setGlucoseOpen(true)} size="lg" variant="secondary">
             <Plus className="mr-1.5 h-4 w-4" /> Glucose
           </Button>
           <Button onClick={() => setInsulinOpen(true)} size="lg" variant="secondary">

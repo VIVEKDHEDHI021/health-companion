@@ -10,16 +10,23 @@ import {
   Sun,
   Menu,
   X,
+  Camera,
+  CloudOff,
+  CloudRain,
+  CloudLightning,
 } from "lucide-react";
-import { useState, type ReactNode } from "react";
+import { useState, type ReactNode, useEffect } from "react";
 import { useAuth } from "@/frontend/lib/auth-context";
 import { useTheme } from "@/frontend/lib/theme";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/frontend/lib/utils";
 import { useNotifications } from "@/frontend/hooks/useNotifications";
+import { scannerService } from "@/backend/services/scannerService";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/dashboard" as const, icon: Home, label: "Dashboard" },
+  { to: "/scanner" as const, icon: Camera, label: "Scan Device" },
   { to: "/history" as const, icon: History, label: "History" },
   { to: "/reports" as const, icon: BarChart3, label: "Reports" },
   { to: "/export" as const, icon: FileDown, label: "Export" },
@@ -33,11 +40,48 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
   const [open, setOpen] = useState(false);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+
+  // Background offline scan sync listener
+  useEffect(() => {
+    if (!user) return;
+
+    const checkAndSync = async () => {
+      const pending = scannerService.getPendingScans();
+      setPendingSyncCount(pending.length);
+
+      if (navigator.onLine && pending.length > 0) {
+        toast.info(`Syncing ${pending.length} offline readings...`);
+        try {
+          const result = await scannerService.syncPendingScans();
+          if (result.count > 0) {
+            toast.success(`Synced ${result.count} offline readings to cloud!`);
+          }
+          // Refresh count
+          setPendingSyncCount(scannerService.getPendingScans().length);
+        } catch (err) {
+          console.error("Sync error:", err);
+        }
+      }
+    };
+
+    checkAndSync();
+    window.addEventListener("online", checkAndSync);
+    const interval = setInterval(checkAndSync, 12000); // check periodically
+
+    return () => {
+      window.removeEventListener("online", checkAndSync);
+      clearInterval(interval);
+    };
+  }, [user]);
 
   const handleSignOut = async () => {
     await signOut();
     navigate({ to: "/login" });
   };
+
+  // We exclude /scanner from mobile bottom nav to prevent squishing
+  const mobileNavItems = NAV.filter(n => n.to !== "/scanner");
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -79,6 +123,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Sync Badge */}
+            {pendingSyncCount > 0 && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20 px-2 py-1 rounded-full animate-pulse">
+                <CloudOff className="h-3 w-3" /> Offline ({pendingSyncCount})
+              </span>
+            )}
+            
             <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
@@ -144,7 +195,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-xl md:hidden">
         <div className="grid grid-cols-4">
-          {NAV.map((n) => {
+          {mobileNavItems.map((n) => {
             const active = path === n.to;
             const Icon = n.icon;
             return (
@@ -163,6 +214,18 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
         </div>
       </nav>
+
+      {/* Floating Action Button (FAB) for Scanner (Visible on all logged-in pages except the scanner page itself) */}
+      {path !== "/scanner" && (
+        <button
+          onClick={() => navigate({ to: "/scanner" })}
+          className="fixed bottom-20 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 md:bottom-6 md:right-6 group border border-primary/20"
+          aria-label="Scan device"
+        >
+          <Camera className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
+          <span className="sr-only">Scan Device</span>
+        </button>
+      )}
     </div>
   );
 }
