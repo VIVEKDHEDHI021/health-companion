@@ -1,8 +1,18 @@
 import { createWorker } from "tesseract.js";
 import { Capacitor } from "@capacitor/core";
 
+export interface OcrBlock {
+  text: string;
+  confidence: number; // 0 to 100
+  x: number;          // Left bound in pixels
+  y: number;          // Top bound in pixels
+  width: number;
+  height: number;
+}
+
 export interface OcrResult {
   text: string;
+  blocks: OcrBlock[];
   source: "Tesseract.js" | "Google ML Kit";
 }
 
@@ -78,8 +88,18 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
       }).catch(err => console.warn("[OCR] Temp file deletion failed:", err));
 
       const texts = nativeResult.textDetections.map((d: any) => d.text).join("\n");
+      const blocks: OcrBlock[] = nativeResult.textDetections.map((d: any) => ({
+        text: d.text,
+        confidence: d.confidence || 80,
+        x: d.boundingBox?.x || 0,
+        y: d.boundingBox?.y || 0,
+        width: d.boundingBox?.width || 0,
+        height: d.boundingBox?.height || 0,
+      }));
+
       return {
         text: texts,
+        blocks,
         source: "Google ML Kit",
       };
     } catch (err) {
@@ -99,8 +119,18 @@ export async function performOcr(canvas: HTMLCanvasElement): Promise<OcrResult> 
 
   // Run recognition on canvas
   const { data } = await tesseractWorker.recognize(canvas);
+  const blocks: OcrBlock[] = (data.words || []).map((word: any) => ({
+    text: word.text,
+    confidence: word.confidence || 0,
+    x: word.bbox?.x0 || 0,
+    y: word.bbox?.y0 || 0,
+    width: (word.bbox?.x1 || 0) - (word.bbox?.x0 || 0),
+    height: (word.bbox?.y1 || 0) - (word.bbox?.y0 || 0),
+  }));
+
   return {
     text: data.text || "",
+    blocks,
     source: "Tesseract.js",
   };
 }

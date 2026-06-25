@@ -163,34 +163,46 @@ export default function SmartScannerView() {
         
         if (ocrResult.text.trim()) {
           // Parse values
-          const matchedReading = detectDeviceAndReadings(ocrResult.text);
+          const matchedReading = detectDeviceAndReadings(ocrResult);
           
           if (matchedReading) {
-            setOcrLog(`Detected: ${matchedReading.deviceType}`);
             const valHash = JSON.stringify(matchedReading.data);
 
-            // Strict matching criteria for auto-capture
-            if (valHash === lastMatchedVal) {
-              const matches = consecutiveMatches + 1;
-              setConsecutiveMatches(matches);
-              
-              // If reading stabilizes over 2 consecutive cycles (approx 3 seconds), freeze and confirm
-              if (matches >= 2 || matchedReading.confidence >= 0.85) {
-                stopCamera();
-                setDetectedReading({
-                  ...matchedReading,
-                  ocrSource: ocrResult.source,
-                } as any);
-                setConfirmOpen(true);
-                toast.success(`Success! Found ${matchedReading.deviceType}`);
-                setConsecutiveMatches(0);
-              }
+            if (matchedReading.confidence >= 0.85) {
+              setOcrLog(`✅ Reading detected successfully! (${matchedReading.deviceType})`);
+              stopCamera();
+              setDetectedReading({
+                ...matchedReading,
+                ocrSource: ocrResult.source,
+              } as any);
+              setConfirmOpen(true);
+              toast.success(`Success! Found ${matchedReading.deviceType}`);
+              setConsecutiveMatches(0);
             } else {
-              setLastMatchedVal(valHash);
-              setConsecutiveMatches(1);
+              // Wait for stabilization or prompt user to verify
+              if (valHash === lastMatchedVal) {
+                const matches = consecutiveMatches + 1;
+                setConsecutiveMatches(matches);
+                if (matches >= 2) {
+                  setOcrLog(`⚠️ Please verify the detected value. (${matchedReading.deviceType})`);
+                  stopCamera();
+                  setDetectedReading({
+                    ...matchedReading,
+                    ocrSource: ocrResult.source,
+                  } as any);
+                  setConfirmOpen(true);
+                  setConsecutiveMatches(0);
+                } else {
+                  setOcrLog(`🔍 Stabilizing reading... (${matchedReading.deviceType})`);
+                }
+              } else {
+                setLastMatchedVal(valHash);
+                setConsecutiveMatches(1);
+                setOcrLog(`🔍 Aligning details... (${matchedReading.deviceType})`);
+              }
             }
           } else {
-            setOcrLog("Searching for display text...");
+            setOcrLog("📷 Align screen flat inside the box. Adjust lighting.");
             setConsecutiveMatches(0);
           }
         }
@@ -219,7 +231,7 @@ export default function SmartScannerView() {
       preprocessCanvasForOcr(processCanvas);
 
       const ocrResult = await performOcr(processCanvas);
-      const matchedReading = detectDeviceAndReadings(ocrResult.text);
+      const matchedReading = detectDeviceAndReadings(ocrResult);
 
       if (matchedReading) {
         setDetectedReading({
@@ -271,7 +283,7 @@ export default function SmartScannerView() {
 
         setOcrLog("Running OCR on image...");
         const ocrResult = await performOcr(tempCanvas);
-        const matchedReading = detectDeviceAndReadings(ocrResult.text);
+        const matchedReading = detectDeviceAndReadings(ocrResult);
 
         if (matchedReading) {
           setDetectedReading({
