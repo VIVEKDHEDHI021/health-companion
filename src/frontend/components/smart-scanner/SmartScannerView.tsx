@@ -228,8 +228,16 @@ export default function SmartScannerView() {
         } as any);
         setConfirmOpen(true);
       } else {
-        toast.error("Could not recognize reading. Please try again or adjust lighting.");
-        startCamera();
+        // Fallback: If heuristics failed, let user select device and enter values manually
+        setDetectedReading({
+          deviceType: "Blood Glucose Meter",
+          confidence: 0.3,
+          data: { glucose: 100, unit: "mg/dL" },
+          rawText: ocrResult.text,
+          ocrSource: ocrResult.source,
+        } as any);
+        setConfirmOpen(true);
+        toast.warning("Heuristic scan was inconclusive. Please enter values manually.");
       }
     } catch (err) {
       console.error(err);

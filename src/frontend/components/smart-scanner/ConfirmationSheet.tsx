@@ -36,6 +36,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
   const [readingDate, setReadingDate] = useState("");
   const [readingTime, setReadingTime] = useState("");
   
+  // Device Type State (allows user overrides)
+  const [deviceType, setDeviceType] = useState<"Blood Glucose Meter" | "Blood Pressure Monitor" | "Pulse Oximeter" | "Thermometer" | "Weight Scale">("Blood Glucose Meter");
+
   // Dynamic fields
   const [glucose, setGlucose] = useState<number>(0);
   const [glucoseUnit, setGlucoseUnit] = useState("mg/dL");
@@ -65,27 +68,34 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
       setReadingTime(format(now, "HH:mm"));
       setNotes(reading.notes || "");
       setRangeWarning(null);
+      setDeviceType(reading.deviceType);
 
-      // Prepopulate state based on device type
+      // Prepopulate states based on read data
       const d = reading.data;
-      if (reading.deviceType === "Blood Glucose Meter") {
-        setGlucose(d.glucose || 0);
-        setGlucoseUnit(d.unit || "mg/dL");
-        setGlucoseType("Fasting");
-      } else if (reading.deviceType === "Blood Pressure Monitor") {
-        setSystolic(d.systolic || 0);
-        setDiastolic(d.diastolic || 0);
-        setBpPulse(d.pulse || 0);
-      } else if (reading.deviceType === "Pulse Oximeter") {
-        setSpo2(d.spo2 || 0);
-        setOxPulse(d.pulse || 0);
-      } else if (reading.deviceType === "Thermometer") {
-        setTemperature(d.temperature || 0);
-        setTempUnit(d.unit || "°C");
-      } else if (reading.deviceType === "Weight Scale") {
-        setWeight(d.weight || 0);
-        setWeightUnit(d.unit || "kg");
-      }
+      
+      // Parse any numeric candidates from raw text to prefill other fields in case user switches device type
+      const numbers = (reading.rawText || "").match(/\b\d{1,3}(?:\.\d)?\b/g) || [];
+      const num0 = numbers.length > 0 ? parseFloat(numbers[0]) : 0;
+      const num1 = numbers.length > 1 ? parseFloat(numbers[1]) : 0;
+      const num2 = numbers.length > 2 ? parseFloat(numbers[2]) : 0;
+
+      // Smart pre-population for all possible device types
+      setGlucose(d.glucose || (num0 >= 30 && num0 <= 400 ? num0 : 100));
+      setGlucoseUnit(d.unit || "mg/dL");
+      setGlucoseType("Fasting");
+
+      setSystolic(d.systolic || (num0 >= 70 && num0 <= 200 ? num0 : 120));
+      setDiastolic(d.diastolic || (num1 >= 40 && num1 <= 120 ? num1 : 80));
+      setBpPulse(d.pulse || (num2 >= 40 && num2 <= 180 ? num2 : 70));
+
+      setSpo2(d.spo2 || (num0 >= 80 && num0 <= 100 ? num0 : 98));
+      setOxPulse(d.pulse || (num1 >= 40 && num1 <= 180 ? num1 : 72));
+
+      setTemperature(d.temperature || (num0 >= 30 && num0 <= 110 ? num0 : 36.5));
+      setTempUnit(d.unit || "°C");
+
+      setWeight(d.weight || (num0 >= 30 && num0 <= 300 ? num0 : 70.0));
+      setWeightUnit(d.unit || "kg");
     }
   }, [open, reading]);
 
@@ -94,25 +104,25 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
     if (!reading) return;
 
     let testData: any = {};
-    if (reading.deviceType === "Blood Glucose Meter") {
+    if (deviceType === "Blood Glucose Meter") {
       testData = { glucose, unit: glucoseUnit };
-    } else if (reading.deviceType === "Blood Pressure Monitor") {
+    } else if (deviceType === "Blood Pressure Monitor") {
       testData = { systolic, diastolic, pulse: bpPulse };
-    } else if (reading.deviceType === "Pulse Oximeter") {
+    } else if (deviceType === "Pulse Oximeter") {
       testData = { spo2, pulse: oxPulse };
-    } else if (reading.deviceType === "Thermometer") {
+    } else if (deviceType === "Thermometer") {
       testData = { temperature, unit: tempUnit };
-    } else if (reading.deviceType === "Weight Scale") {
+    } else if (deviceType === "Weight Scale") {
       testData = { weight, unit: weightUnit };
     }
 
-    const valResult = validatePhysiologicalRange(reading.deviceType, testData);
+    const valResult = validatePhysiologicalRange(deviceType, testData);
     if (!valResult.valid && valResult.warning) {
       setRangeWarning(valResult.warning);
     } else {
       setRangeWarning(null);
     }
-  }, [reading, glucose, glucoseUnit, systolic, diastolic, bpPulse, spo2, oxPulse, temperature, tempUnit, weight, weightUnit]);
+  }, [reading, deviceType, glucose, glucoseUnit, systolic, diastolic, bpPulse, spo2, oxPulse, temperature, tempUnit, weight, weightUnit]);
 
   if (!reading) return null;
 
@@ -121,31 +131,31 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
     try {
       // Assemble final data structure
       let finalDataFields: any = {};
-      if (reading.deviceType === "Blood Glucose Meter") {
+      if (deviceType === "Blood Glucose Meter") {
         finalDataFields = { 
           glucose: Number(glucose), 
           unit: glucoseUnit,
           glucose_reading_type: glucoseType 
         };
-      } else if (reading.deviceType === "Blood Pressure Monitor") {
+      } else if (deviceType === "Blood Pressure Monitor") {
         finalDataFields = { 
           systolic: Number(systolic), 
           diastolic: Number(diastolic), 
           pulse: bpPulse ? Number(bpPulse) : undefined, 
           unit: "mmHg" 
         };
-      } else if (reading.deviceType === "Pulse Oximeter") {
+      } else if (deviceType === "Pulse Oximeter") {
         finalDataFields = { 
           spo2: Number(spo2), 
           pulse: oxPulse ? Number(oxPulse) : undefined, 
           unit: "%" 
         };
-      } else if (reading.deviceType === "Thermometer") {
+      } else if (deviceType === "Thermometer") {
         finalDataFields = { 
           temperature: Number(temperature), 
           unit: tempUnit 
         };
-      } else if (reading.deviceType === "Weight Scale") {
+      } else if (deviceType === "Weight Scale") {
         finalDataFields = { 
           weight: Number(weight), 
           unit: weightUnit 
@@ -153,7 +163,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
       }
 
       const finalPayload: ParsedReading = {
-        deviceType: reading.deviceType,
+        deviceType: deviceType,
         confidence: reading.confidence,
         data: finalDataFields,
         notes: notes || null,
@@ -207,7 +217,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </DialogTitle>
           </div>
           <DialogDescription className="text-sm text-muted-foreground">
-            Automatically detected: <strong className="text-foreground">{reading.deviceType}</strong>
+            Review and adjust the extracted device readings.
           </DialogDescription>
           <div className="pt-1.5">{renderConfidenceBadge()}</div>
         </DialogHeader>
@@ -222,8 +232,25 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
         )}
 
         <div className="space-y-4 py-3">
+          {/* Device Type Select Dropdown */}
+          <div className="space-y-1.5">
+            <Label htmlFor="deviceTypeSelect" className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Device Type</Label>
+            <Select value={deviceType} onValueChange={(val: any) => setDeviceType(val)}>
+              <SelectTrigger id="deviceTypeSelect" className="font-semibold text-foreground">
+                <SelectValue placeholder="Select Device Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Blood Glucose Meter">Blood Glucose Meter</SelectItem>
+                <SelectItem value="Blood Pressure Monitor">Blood Pressure Monitor</SelectItem>
+                <SelectItem value="Pulse Oximeter">Pulse Oximeter</SelectItem>
+                <SelectItem value="Thermometer">Thermometer</SelectItem>
+                <SelectItem value="Weight Scale">Weight Scale</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Dynamic input blocks per device type */}
-          {reading.deviceType === "Blood Glucose Meter" && (
+          {deviceType === "Blood Glucose Meter" && (
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5 col-span-2">
                 <Label htmlFor="glucoseVal">Glucose Value</Label>
@@ -270,7 +297,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </div>
           )}
 
-          {reading.deviceType === "Blood Pressure Monitor" && (
+          {deviceType === "Blood Pressure Monitor" && (
             <div className="grid grid-cols-3 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="sys">Systolic (SYS)</Label>
@@ -314,7 +341,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </div>
           )}
 
-          {reading.deviceType === "Pulse Oximeter" && (
+          {deviceType === "Pulse Oximeter" && (
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <Label htmlFor="spo2">SpO₂ Level</Label>
@@ -345,7 +372,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </div>
           )}
 
-          {reading.deviceType === "Thermometer" && (
+          {deviceType === "Thermometer" && (
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <Label htmlFor="temp">Temperature</Label>
@@ -373,7 +400,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </div>
           )}
 
-          {reading.deviceType === "Weight Scale" && (
+          {deviceType === "Weight Scale" && (
             <div className="grid grid-cols-2 gap-3.5">
               <div className="space-y-1.5">
                 <Label htmlFor="weight">Weight</Label>
@@ -401,7 +428,7 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
             </div>
           )}
 
-          {/* Time and Date (Always editable, defaults to current Phone Date & Time) */}
+          {/* Time and Date */}
           <div className="grid grid-cols-2 gap-3.5">
             <div className="space-y-1.5">
               <Label htmlFor="readingDate">Date</Label>
