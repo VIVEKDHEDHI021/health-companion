@@ -1,5 +1,5 @@
 export const READING_TYPES = ["BB", "AB", "BL", "AL", "BD", "AD", "BT", "Fasting"] as const;
-export type ReadingType = typeof READING_TYPES[number];
+export type ReadingType = (typeof READING_TYPES)[number];
 
 export const READING_LABELS: Record<ReadingType, string> = {
   BB: "Before Breakfast",
@@ -45,7 +45,8 @@ export interface WeightEntry {
 }
 
 export function glucoseStatus(value: number, type: ReadingType): "low" | "normal" | "high" {
-  const isFasting = type === "Fasting" || type === "BB" || type === "BL" || type === "BD" || type === "BT";
+  const isFasting =
+    type === "Fasting" || type === "BB" || type === "BL" || type === "BD" || type === "BT";
   if (value < 70) return "low";
   if (isFasting) return value > 130 ? "high" : "normal";
   return value > 180 ? "high" : "normal";

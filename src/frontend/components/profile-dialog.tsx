@@ -8,7 +8,14 @@ import { useAuth } from "@/frontend/lib/auth-context";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/frontend/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/frontend/components/ui/dialog";
 
 const schema = z.object({
   name: z.string().min(1, "Name is required").max(100),
@@ -77,7 +84,9 @@ export function ProfileDialog({ open, onOpenChange, onSaved }: Props) {
           <div className="space-y-1.5">
             <Label htmlFor="name">Your Name</Label>
             <Input id="name" placeholder="John Doe" {...form.register("name")} />
-            {form.formState.errors.name && <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>}
+            {form.formState.errors.name && (
+              <p className="text-xs text-destructive">{form.formState.errors.name.message}</p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -86,12 +95,18 @@ export function ProfileDialog({ open, onOpenChange, onSaved }: Props) {
             <p className="text-[0.7rem] text-muted-foreground">
               We'll send a message to this number whenever you log a new glucose reading.
             </p>
-            {form.formState.errors.phone && <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>}
+            {form.formState.errors.phone && (
+              <p className="text-xs text-destructive">{form.formState.errors.phone.message}</p>
+            )}
           </div>
 
           <DialogFooter className="pt-2">
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving}>{saving ? "Saving..." : "Save settings"}</Button>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving..." : "Save settings"}
+            </Button>
           </DialogFooter>
         </form>
       </DialogContent>

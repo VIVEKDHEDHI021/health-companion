@@ -17,14 +17,19 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (user) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard" });
+  }, [user, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Welcome back!");
     navigate({ to: "/dashboard" });
   };
@@ -40,17 +45,39 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">Sign in to continue tracking</p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Password</Label>
-              <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">Forgot?</Link>
+              <Link
+                to="/forgot-password"
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Forgot?
+              </Link>
             </div>
-            <Input id="password" type="password" required autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              required
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
@@ -59,7 +86,9 @@ function LoginPage() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           New here?{" "}
-          <Link to="/signup" className="font-semibold text-primary hover:underline">Create an account</Link>
+          <Link to="/signup" className="font-semibold text-primary hover:underline">
+            Create an account
+          </Link>
         </p>
       </div>
     </div>

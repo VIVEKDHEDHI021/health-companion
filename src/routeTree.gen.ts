@@ -15,6 +15,10 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiSendPushRouteImport } from './routes/api/send-push'
+import { Route as ApiAnalyzeImageRouteImport } from './routes/api/analyze-image'
+import { Route as AuthenticatedTrainingRouteImport } from './routes/_authenticated/training'
+import { Route as AuthenticatedScannerRouteImport } from './routes/_authenticated/scanner'
 import { Route as AuthenticatedReportsRouteImport } from './routes/_authenticated/reports'
 import { Route as AuthenticatedHistoryRouteImport } from './routes/_authenticated/history'
 import { Route as AuthenticatedExportRouteImport } from './routes/_authenticated/export'
@@ -49,6 +53,26 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSendPushRoute = ApiSendPushRouteImport.update({
+  id: '/api/send-push',
+  path: '/api/send-push',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAnalyzeImageRoute = ApiAnalyzeImageRouteImport.update({
+  id: '/api/analyze-image',
+  path: '/api/analyze-image',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTrainingRoute = AuthenticatedTrainingRouteImport.update({
+  id: '/training',
+  path: '/training',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedScannerRoute = AuthenticatedScannerRouteImport.update({
+  id: '/scanner',
+  path: '/scanner',
+  getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedReportsRoute = AuthenticatedReportsRouteImport.update({
   id: '/reports',
@@ -86,6 +110,10 @@ export interface FileRoutesByFullPath {
   '/export': typeof AuthenticatedExportRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/scanner': typeof AuthenticatedScannerRoute
+  '/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRoutesByTo {
@@ -98,6 +126,10 @@ export interface FileRoutesByTo {
   '/export': typeof AuthenticatedExportRoute
   '/history': typeof AuthenticatedHistoryRoute
   '/reports': typeof AuthenticatedReportsRoute
+  '/scanner': typeof AuthenticatedScannerRoute
+  '/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRoutesById {
@@ -112,6 +144,10 @@ export interface FileRoutesById {
   '/_authenticated/export': typeof AuthenticatedExportRoute
   '/_authenticated/history': typeof AuthenticatedHistoryRoute
   '/_authenticated/reports': typeof AuthenticatedReportsRoute
+  '/_authenticated/scanner': typeof AuthenticatedScannerRoute
+  '/_authenticated/training': typeof AuthenticatedTrainingRoute
+  '/api/analyze-image': typeof ApiAnalyzeImageRoute
+  '/api/send-push': typeof ApiSendPushRoute
   '/api/admin/reset-password': typeof ApiAdminResetPasswordRoute
 }
 export interface FileRouteTypes {
@@ -126,6 +162,10 @@ export interface FileRouteTypes {
     | '/export'
     | '/history'
     | '/reports'
+    | '/scanner'
+    | '/training'
+    | '/api/analyze-image'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -138,6 +178,10 @@ export interface FileRouteTypes {
     | '/export'
     | '/history'
     | '/reports'
+    | '/scanner'
+    | '/training'
+    | '/api/analyze-image'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   id:
     | '__root__'
@@ -151,6 +195,10 @@ export interface FileRouteTypes {
     | '/_authenticated/export'
     | '/_authenticated/history'
     | '/_authenticated/reports'
+    | '/_authenticated/scanner'
+    | '/_authenticated/training'
+    | '/api/analyze-image'
+    | '/api/send-push'
     | '/api/admin/reset-password'
   fileRoutesById: FileRoutesById
 }
@@ -161,6 +209,8 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SignupRoute: typeof SignupRoute
+  ApiAnalyzeImageRoute: typeof ApiAnalyzeImageRoute
+  ApiSendPushRoute: typeof ApiSendPushRoute
   ApiAdminResetPasswordRoute: typeof ApiAdminResetPasswordRoute
 }
 
@@ -208,6 +258,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/send-push': {
+      id: '/api/send-push'
+      path: '/api/send-push'
+      fullPath: '/api/send-push'
+      preLoaderRoute: typeof ApiSendPushRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/analyze-image': {
+      id: '/api/analyze-image'
+      path: '/api/analyze-image'
+      fullPath: '/api/analyze-image'
+      preLoaderRoute: typeof ApiAnalyzeImageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/training': {
+      id: '/_authenticated/training'
+      path: '/training'
+      fullPath: '/training'
+      preLoaderRoute: typeof AuthenticatedTrainingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/scanner': {
+      id: '/_authenticated/scanner'
+      path: '/scanner'
+      fullPath: '/scanner'
+      preLoaderRoute: typeof AuthenticatedScannerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/reports': {
       id: '/_authenticated/reports'
       path: '/reports'
@@ -251,6 +329,8 @@ interface AuthenticatedRouteChildren {
   AuthenticatedExportRoute: typeof AuthenticatedExportRoute
   AuthenticatedHistoryRoute: typeof AuthenticatedHistoryRoute
   AuthenticatedReportsRoute: typeof AuthenticatedReportsRoute
+  AuthenticatedScannerRoute: typeof AuthenticatedScannerRoute
+  AuthenticatedTrainingRoute: typeof AuthenticatedTrainingRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -258,6 +338,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedExportRoute: AuthenticatedExportRoute,
   AuthenticatedHistoryRoute: AuthenticatedHistoryRoute,
   AuthenticatedReportsRoute: AuthenticatedReportsRoute,
+  AuthenticatedScannerRoute: AuthenticatedScannerRoute,
+  AuthenticatedTrainingRoute: AuthenticatedTrainingRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
@@ -271,6 +353,8 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SignupRoute: SignupRoute,
+  ApiAnalyzeImageRoute: ApiAnalyzeImageRoute,
+  ApiSendPushRoute: ApiSendPushRoute,
   ApiAdminResetPasswordRoute: ApiAdminResetPasswordRoute,
 }
 export const routeTree = rootRouteImport

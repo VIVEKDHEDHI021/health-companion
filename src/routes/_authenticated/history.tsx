@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/history")({
 
 function HistoryPage() {
   const { user } = useAuth();
+  const todayStr = format(new Date(), "yyyy-MM-dd");
   const [entries, setEntries] = useState<GlucoseEntry[]>([]);
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
@@ -26,10 +27,32 @@ function HistoryPage() {
   const [editing, setEditing] = useState<GlucoseEntry | null>(null);
   const [open, setOpen] = useState(false);
 
+  const handleFromChange = (val: string) => {
+    if (val > todayStr) {
+      setFrom(todayStr);
+    } else {
+      setFrom(val);
+    }
+  };
+
+  const handleToChange = (val: string) => {
+    if (val > todayStr) {
+      setTo(todayStr);
+    } else {
+      setTo(val);
+    }
+  };
+
   const load = async () => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
     if (!currentUser) return;
-    let q = supabase.from("glucose_entries").select("*").eq("user_id", currentUser.id).order("date_time", { ascending: false });
+    let q = supabase
+      .from("glucose_entries")
+      .select("*")
+      .eq("user_id", currentUser.id)
+      .order("date_time", { ascending: false });
     if (from) q = q.gte("date_time", new Date(from).toISOString());
     if (to) q = q.lte("date_time", new Date(`${to}T23:59:59`).toISOString());
     const { data } = await q;
@@ -57,11 +80,23 @@ function HistoryPage() {
   });
 
   const handleDelete = async (id: string) => {
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser) { toast.error("Not authenticated"); return; }
+    const {
+      data: { user: currentUser },
+    } = await supabase.auth.getUser();
+    if (!currentUser) {
+      toast.error("Not authenticated");
+      return;
+    }
     if (!confirm("Delete this entry?")) return;
-    const { error } = await supabase.from("glucose_entries").delete().eq("id", id).eq("user_id", currentUser.id);
-    if (error) { toast.error(error.message); return; }
+    const { error } = await supabase
+      .from("glucose_entries")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", currentUser.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Deleted");
     load();
   };
@@ -76,10 +111,28 @@ function HistoryPage() {
       <div className="grid gap-3 sm:grid-cols-3">
         <div className="relative sm:col-span-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search notes, food..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input
+            placeholder="Search notes, food..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} aria-label="From date" />
-        <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} aria-label="To date" />
+        <Input
+          type="date"
+          value={from}
+          max={to || todayStr}
+          onChange={(e) => handleFromChange(e.target.value)}
+          aria-label="From date"
+        />
+        <Input
+          type="date"
+          value={to}
+          min={from}
+          max={todayStr}
+          onChange={(e) => handleToChange(e.target.value)}
+          aria-label="To date"
+        />
       </div>
 
       <div className="rounded-2xl border border-border bg-card shadow-soft">
@@ -94,34 +147,56 @@ function HistoryPage() {
               const st = glucoseStatus(Number(e.glucose), e.reading_type);
               return (
                 <li key={e.id} className="flex items-center gap-4 p-4 sm:p-5">
-                  <div className={cn(
-                    "flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl font-display font-bold",
-                    st === "high" && "bg-destructive/10 text-destructive",
-                    st === "low" && "bg-warning/10 text-warning",
-                    st === "normal" && "bg-success/10 text-success",
-                  )}>
+                  <div
+                    className={cn(
+                      "flex h-12 w-12 shrink-0 flex-col items-center justify-center rounded-xl font-display font-bold",
+                      st === "high" && "bg-destructive/10 text-destructive",
+                      st === "low" && "bg-warning/10 text-warning",
+                      st === "normal" && "bg-success/10 text-success",
+                    )}
+                  >
                     <div className="text-sm leading-none">{Math.round(Number(e.glucose))}</div>
                     <div className="text-[9px] font-semibold opacity-80">mg/dL</div>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <Badge variant="secondary" className="text-[10px]">{e.reading_type}</Badge>
-                      <span className="text-xs text-muted-foreground">{READING_LABELS[e.reading_type]}</span>
+                      <Badge variant="secondary" className="text-[10px]">
+                        {e.reading_type}
+                      </Badge>
+                      <span className="text-xs text-muted-foreground">
+                        {READING_LABELS[e.reading_type]}
+                      </span>
                     </div>
                     <div className="mt-0.5 truncate text-sm text-foreground">
                       {format(new Date(e.date_time), "EEE, MMM d · HH:mm")}
                     </div>
                     {(e.food || e.notes || e.symptoms) && (
                       <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {[e.food, e.symptoms ? `Insulin: ${e.symptoms}` : null, e.notes].filter(Boolean).join(" · ")}
+                        {[e.food, e.symptoms ? `Insulin: ${e.symptoms}` : null, e.notes]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </div>
                     )}
                   </div>
                   <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => { setEditing(e); setOpen(true); }} aria-label="Edit">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        setEditing(e);
+                        setOpen(true);
+                      }}
+                      aria-label="Edit"
+                    >
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(e.id)} aria-label="Delete" className="text-destructive">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(e.id)}
+                      aria-label="Delete"
+                      className="text-destructive"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -132,7 +207,15 @@ function HistoryPage() {
         )}
       </div>
 
-      <GlucoseDialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(null); }} entry={editing} onSaved={load} />
+      <GlucoseDialog
+        open={open}
+        onOpenChange={(o) => {
+          setOpen(o);
+          if (!o) setEditing(null);
+        }}
+        entry={editing}
+        onSaved={load}
+      />
     </div>
   );
 }

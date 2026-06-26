@@ -45,7 +45,7 @@ function ResetPage() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       const type = params.get("type") || queryParams.get("type");
       const hasAccessToken = params.has("access_token") || queryParams.has("access_token");
-      
+
       if (session || (type === "recovery" && hasAccessToken)) {
         setIsAuthenticated(true);
       } else {
@@ -57,16 +57,16 @@ function ResetPage() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { 
-      toast.error("Password must be at least 6 characters"); 
-      return; 
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
     }
     setLoading(true);
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) { 
-      toast.error(error.message); 
-      return; 
+    if (error) {
+      toast.error(error.message);
+      return;
     }
     toast.success("Password updated successfully!");
     navigate({ to: "/dashboard" });
@@ -100,7 +100,10 @@ function ResetPage() {
             <div className="mt-4 rounded-xl border border-border bg-card p-4 text-xs text-muted-foreground text-left">
               <span className="font-semibold text-foreground">Why did this happen?</span>
               <ul className="mt-1.5 list-disc pl-4 space-y-1">
-                <li>Some email security scanners preview links automatically, which invalidates single-use reset tokens.</li>
+                <li>
+                  Some email security scanners preview links automatically, which invalidates
+                  single-use reset tokens.
+                </li>
                 <li>The link may have reached its expiration time limit.</li>
                 <li>A newer reset link was requested, invalidating this one.</li>
               </ul>
@@ -162,17 +165,20 @@ function ResetPage() {
           </p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input 
-              id="password" 
-              type="password" 
-              required 
-              minLength={6} 
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={6}
               placeholder="Min. 6 characters"
-              value={password} 
-              onChange={(e) => setPassword(e.target.value)} 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
             />
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>

@@ -18,11 +18,16 @@ function SignupPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => { if (user) navigate({ to: "/dashboard" }); }, [user, navigate]);
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard" });
+  }, [user, navigate]);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (password.length < 6) { toast.error("Password must be at least 6 characters"); return; }
+    if (password.length < 6) {
+      toast.error("Password must be at least 6 characters");
+      return;
+    }
     setLoading(true);
     const { error } = await supabase.auth.signUp({
       email,
@@ -33,7 +38,10 @@ function SignupPage() {
       },
     });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Account created! Welcome.");
     navigate({ to: "/dashboard" });
   };
@@ -49,18 +57,36 @@ function SignupPage() {
           <p className="mt-1 text-sm text-muted-foreground">Start tracking in seconds</p>
         </div>
 
-        <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated">
+        <form
+          onSubmit={onSubmit}
+          className="space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated"
+        >
           <div className="space-y-1.5">
             <Label htmlFor="name">Full name</Label>
             <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" type="email" required autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              required
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" required minLength={6} autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} />
+            <Input
+              id="password"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
             <p className="text-xs text-muted-foreground">At least 6 characters.</p>
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
@@ -70,7 +96,9 @@ function SignupPage() {
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Already have an account?{" "}
-          <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link>
+          <Link to="/login" className="font-semibold text-primary hover:underline">
+            Sign in
+          </Link>
         </p>
       </div>
     </div>

@@ -21,7 +21,10 @@ function ForgotPage() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     setLoading(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     setSent(true);
     toast.success("Reset email sent!");
   };
@@ -29,21 +32,35 @@ function ForgotPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-md">
-        <Link to="/login" className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
+        <Link
+          to="/login"
+          className="mb-6 inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground"
+        >
           <ArrowLeft className="h-4 w-4" /> Back to sign in
         </Link>
         <h1 className="font-display text-3xl font-bold">Reset password</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Enter your email and we'll send you a reset link.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Enter your email and we'll send you a reset link.
+        </p>
 
         {sent ? (
           <div className="mt-6 rounded-2xl border border-success/30 bg-success/10 p-6 text-sm">
             Check your inbox for the password reset link.
           </div>
         ) : (
-          <form onSubmit={onSubmit} className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated">
+          <form
+            onSubmit={onSubmit}
+            className="mt-6 space-y-4 rounded-2xl border border-border bg-card p-6 shadow-elevated"
+          >
             <div className="space-y-1.5">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input
+                id="email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
               {loading ? "Sending..." : "Send reset link"}
