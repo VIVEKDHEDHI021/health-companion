@@ -1,6 +1,7 @@
 import { initializeApp, getApp, getApps } from "firebase/app";
 import { getMessaging, type Messaging } from "firebase/messaging";
 import { getAnalytics } from "firebase/analytics";
+import { Capacitor } from "@capacitor/core";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -19,9 +20,22 @@ const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 // Analytics is only initialized in the browser
 export const analytics = typeof window !== "undefined" ? getAnalytics(app) : null;
 
-// Messaging is only initialized in the browser
-export const messaging =
-  typeof window !== "undefined" ? getMessaging(app) : (null as unknown as Messaging);
+// Messaging is only initialized in browser environments that support it, and not on native mobile platforms
+let messagingInstance: Messaging | null = null;
+if (
+  typeof window !== "undefined" &&
+  !Capacitor.isNativePlatform() &&
+  "serviceWorker" in navigator &&
+  "PushManager" in window
+) {
+  try {
+    messagingInstance = getMessaging(app);
+  } catch (e) {
+    console.warn("[Firebase] Messaging initialization failed:", e);
+  }
+}
+
+export const messaging = messagingInstance as unknown as Messaging;
 
 export const vapidKey =
   "BJPDjHoQjwz5oUHediJuyaWTvkgr4AVFHCv6KeMWra1caVHs01QKfdbCZ4gJpp2BYqo_bla5E_K_QnkKqe-za90";

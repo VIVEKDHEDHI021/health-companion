@@ -1,41 +1,41 @@
 import fs from "fs";
 import path from "path";
 
-const manifestPath = path.resolve("dist/server/.vite/manifest.json");
 const clientDistDir = path.resolve("dist/client");
+const assetsDir = path.join(clientDistDir, "assets");
 
-if (!fs.existsSync(manifestPath)) {
-  console.error("Manifest not found");
+if (!fs.existsSync(assetsDir)) {
+  console.error("Assets directory not found");
   process.exit(1);
 }
 
-const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
+const files = fs.readdirSync(assetsDir);
 
-// The client entry in Tanstack Start is usually an entry inside node_modules/@tanstack/react-start or virtual
-// Let's find the main script by looking for the one that imports most router stuff or has the name "index"
-// Actually, let's look for "client" or "index".
-let cssFile = "";
-for (const key in manifest) {
-  const item = manifest[key];
-  if (item.file && item.file.endsWith(".css")) {
-    cssFile = item.file;
-  }
+// 1. Find the CSS file (e.g. styles-DTP39opD.css)
+let cssFile = files.find(f => f.endsWith(".css") && (f.startsWith("styles-") || f.includes("styles")));
+if (cssFile) {
+  cssFile = `assets/${cssFile}`;
 }
 
-// Tanstack start client entry is typically the start script.
+// 2. Find the largest index-*.js file which represents our main React/router bundle
 let jsEntry = "";
-for (const key in manifest) {
-  if (key.includes("plugin/default-entry/start.ts")) {
-    jsEntry = manifest[key].file;
-    break;
-  }
-}
-if (!jsEntry) {
-  for (const key in manifest) {
-    if (key.includes("index.es-") || key.includes("index-")) {
-      jsEntry = manifest[key].file;
+let maxJsSize = 0;
+
+for (const file of files) {
+  if (file.endsWith(".js") && file.startsWith("index-")) {
+    const filePath = path.join(assetsDir, file);
+    const stats = fs.statSync(filePath);
+    if (stats.size > maxJsSize) {
+      maxJsSize = stats.size;
+      jsEntry = `assets/${file}`;
     }
   }
+}
+
+// Fallback if no index-*.js matches
+if (!jsEntry) {
+  const anyIndex = files.find(f => f.endsWith(".js") && f.startsWith("index"));
+  if (anyIndex) jsEntry = `assets/${anyIndex}`;
 }
 
 console.log("Using JS entry:", jsEntry);
@@ -51,6 +51,7 @@ const html = `<!DOCTYPE html>
     ${cssFile ? `<link rel="stylesheet" href="/${cssFile}" />` : ""}
   </head>
   <body>
+    <div id="root"></div>
     <!-- Tanstack Router uses the body directly or hydrates -->
     ${jsEntry ? `<script type="module" src="/${jsEntry}"></script>` : ""}
   </body>

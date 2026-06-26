@@ -297,7 +297,7 @@ function TrainingPage() {
       });
 
       if (result.success) {
-        toast.success(result.local ? "Sample saved locally!" : "Sample saved to cloud!");
+        toast.success("Sample saved successfully!");
         // Reset state
         setImageSrc(null);
         setBrand("");
@@ -684,10 +684,14 @@ function TrainingPage() {
                 </div>
                 <Button
                   onClick={handleSaveSample}
-                  loading={loading}
+                  disabled={loading}
                   className="gradient-primary font-semibold px-6"
                 >
-                  <Plus className="mr-1.5 h-4 w-4" /> Save Training Sample
+                  {loading ? "Saving..." : (
+                    <>
+                      <Plus className="mr-1.5 h-4 w-4" /> Save Training Sample
+                    </>
+                  )}
                 </Button>
               </div>
             )}

@@ -5,7 +5,6 @@ const config: CapacitorConfig = {
   appName: "GlucoLab",
   webDir: "dist/client",
   server: {
-    url: "https://tanstack-start-app.glucolab.workers.dev",
     cleartext: true,
   },
 };

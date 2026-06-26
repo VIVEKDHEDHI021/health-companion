@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
+import { Capacitor } from "@capacitor/core";
 import {
   Camera,
   CameraOff,
@@ -96,6 +97,13 @@ export default function SmartScannerView() {
   }, []);
 
   const startCamera = async () => {
+    if (Capacitor.isNativePlatform()) {
+      setHasCameraAccess(true);
+      setIsScanning(true);
+      setOcrLog("Tap 'Scan with Camera' to capture device screen.");
+      return;
+    }
+
     try {
       setHasCameraAccess(null);
       setIsScanning(true);
@@ -129,6 +137,88 @@ export default function SmartScannerView() {
       setIsScanning(false);
       setOcrLog("Camera access denied or unavailable. You can upload an image instead.");
       toast.error("Could not access camera. Please allow permission or upload an image.");
+    }
+  };
+
+  const handleMobileCapture = async (source: "camera" | "gallery") => {
+    try {
+      const { Camera, CameraResultType, CameraSource } = await import("@capacitor/camera");
+      
+      const image = await Camera.getPhoto({
+        quality: 95,
+        allowEditing: false,
+        resultType: CameraResultType.Uri,
+        source: source === "camera" ? CameraSource.Camera : CameraSource.Photos,
+      });
+
+      if (!image.webPath) return;
+
+      setOcrLog("Loading captured image...");
+      const img = new Image();
+      img.onload = async () => {
+        const tempCanvas = document.createElement("canvas");
+        tempCanvas.width = 960;
+        tempCanvas.height = 600;
+        const ctx = tempCanvas.getContext("2d");
+        if (!ctx) return;
+
+        // Draw image fitted to scanning bounds
+        ctx.drawImage(img, 0, 0, tempCanvas.width, tempCanvas.height);
+        setOcrLog("Processing OCR on image...");
+
+        if (scannerMode === "on_call_plus") {
+          const result = await scanGlucoseFrame(tempCanvas);
+          if (result.success && result.value !== undefined) {
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: result.confidence || 0.95,
+              data: { glucose: result.value, unit: result.unit || "mg/dL" },
+              rawText: `Offline Profile parsed: ${result.value}`,
+              ocrSource: "OCR (Offline Profile)",
+            } as any);
+            setConfirmOpen(true);
+          } else {
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: 0.3,
+              data: { glucose: 100, unit: "mg/dL" },
+              rawText: result.message || "Native scan failed to extract reading.",
+              ocrSource: "OCR (Offline Profile)",
+            } as any);
+            setConfirmOpen(true);
+            toast.warning("Profile-based offline scan was inconclusive. Please verify values.");
+          }
+        } else {
+          const ocrResult = await performOcr(tempCanvas);
+          if (ocrResult.geminiResult && ocrResult.geminiResult.error) {
+            setOcrLog(`❌ ${ocrResult.geminiResult.error}`);
+            toast.error(ocrResult.geminiResult.error);
+            return;
+          }
+          const matchedReading = detectDeviceAndReadings(ocrResult);
+          if (matchedReading) {
+            setDetectedReading({
+              ...matchedReading,
+              ocrSource: ocrResult.source,
+            } as any);
+            setConfirmOpen(true);
+          } else {
+            setDetectedReading({
+              deviceType: "Blood Glucose Meter",
+              confidence: 0.3,
+              data: { glucose: 100, unit: "mg/dL" },
+              rawText: ocrResult.text,
+              ocrSource: ocrResult.source,
+            } as any);
+            setConfirmOpen(true);
+            toast.warning("Heuristic scan was inconclusive. Please verify values.");
+          }
+        }
+      };
+      img.src = image.webPath;
+    } catch (err) {
+      console.error("Capacitor camera capture failed:", err);
+      toast.error("Camera capture canceled or failed.");
     }
   };
 
@@ -549,12 +639,29 @@ export default function SmartScannerView() {
           </div>
         )}
 
-        <video
-          ref={videoRef}
-          className={`absolute inset-0 h-full w-full object-cover ${hasCameraAccess ? "block" : "hidden"}`}
-          playsInline
-          muted
-        />
+        {Capacitor.isNativePlatform() ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 p-6 text-center">
+            <div className="relative w-80 h-48 sm:w-[450px] sm:h-64 rounded-3xl border border-zinc-800 bg-zinc-900/40 flex flex-col items-center justify-center overflow-hidden shadow-2xl p-6">
+              <div className="absolute inset-0 border border-dashed border-zinc-700/60 rounded-3xl pointer-events-none" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-900 border border-zinc-800 shadow-lg mb-4">
+                <Camera className="h-6 w-6 text-primary animate-pulse" />
+              </div>
+              <span className="text-base font-bold text-zinc-100">Native Scanner Interface</span>
+              <span className="text-xs text-zinc-400 max-w-xs mt-2 leading-relaxed">
+                {scannerMode === "on_call_plus"
+                  ? "Align the On Call Plus meter screen and capture a photo. Only the large digits will be parsed."
+                  : "Align your health device screen within the frame and capture a photo."}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <video
+            ref={videoRef}
+            className={`absolute inset-0 h-full w-full object-cover ${hasCameraAccess ? "block" : "hidden"}`}
+            playsInline
+            muted
+          />
+        )}
 
         {hasCameraAccess === false && (
           <div className="flex flex-col items-center justify-center p-6 text-center text-zinc-400 gap-4">
@@ -579,8 +686,8 @@ export default function SmartScannerView() {
           </div>
         )}
 
-        {/* Target Overlay Mask */}
-        {hasCameraAccess && isScanning && (
+        {/* Target Overlay Mask - Web Only */}
+        {!Capacitor.isNativePlatform() && hasCameraAccess && isScanning && (
           <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center bg-black/40">
             {/* The Cutout Scanning Box */}
             <div className="relative w-80 h-48 sm:w-[450px] sm:h-64 rounded-2xl border-2 border-primary/60 shadow-[0_0_0_9999px_rgba(0,0,0,0.6)] flex items-center justify-center overflow-hidden">
@@ -651,27 +758,56 @@ export default function SmartScannerView() {
           <span className="text-xs text-zinc-300 font-mono truncate">{ocrLog}</span>
         </div>
 
-        {hasCameraAccess && isScanning && (
-          <div className="flex items-center gap-3">
+        {Capacitor.isNativePlatform() ? (
+          <div className="flex flex-col gap-2.5 w-full">
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={() => handleMobileCapture("camera")}
+                size="lg"
+                className="flex-1 gradient-primary text-primary-foreground font-semibold shadow-soft h-12"
+              >
+                <Camera className="mr-1.5 h-5 w-5" /> Take Photo
+              </Button>
+              <Button
+                onClick={() => handleMobileCapture("gallery")}
+                size="lg"
+                variant="secondary"
+                className="flex-1 font-semibold h-12 bg-zinc-800 text-zinc-200 border-zinc-700 hover:bg-zinc-700"
+              >
+                <Upload className="mr-1.5 h-5 w-5" /> Upload Image
+              </Button>
+            </div>
             <Button
-              onClick={handleManualCapture}
-              size="lg"
-              className="flex-1 gradient-primary text-primary-foreground font-semibold"
-            >
-              <Camera className="mr-1.5 h-5 w-5" /> Take Snapshot
-            </Button>
-            <Button
-              onClick={() => {
-                stopCamera();
-                navigate({ to: "/dashboard" });
-              }}
-              size="lg"
-              variant="secondary"
-              className="px-6"
+              onClick={() => navigate({ to: "/dashboard" })}
+              variant="ghost"
+              className="w-full text-zinc-400 hover:text-white"
             >
               Cancel
             </Button>
           </div>
+        ) : (
+          hasCameraAccess && isScanning && (
+            <div className="flex items-center gap-3">
+              <Button
+                onClick={handleManualCapture}
+                size="lg"
+                className="flex-1 gradient-primary text-primary-foreground font-semibold"
+              >
+                <Camera className="mr-1.5 h-5 w-5" /> Take Snapshot
+              </Button>
+              <Button
+                onClick={() => {
+                  stopCamera();
+                  navigate({ to: "/dashboard" });
+                }}
+                size="lg"
+                variant="secondary"
+                className="px-6"
+              >
+                Cancel
+              </Button>
+            </div>
+          )
         )}
       </footer>
 

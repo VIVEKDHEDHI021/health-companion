@@ -17,8 +17,10 @@ export interface ParsedReading {
     temperature?: number;
     weight?: number;
     unit?: string;
+    glucose_reading_type?: string;
   };
   rawText: string;
+  notes?: string | null;
 }
 
 // Clean and normalize text from OCR

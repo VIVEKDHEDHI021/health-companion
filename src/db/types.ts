@@ -224,6 +224,81 @@ export type Database = {
         };
         Relationships: [];
       };
+      smart_scan_training_samples: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          device_type: string;
+          brand: string;
+          model: string;
+          device_name: string | null;
+          image_url: string;
+          image_resolution: { width: number; height: number };
+          display_bbox: { x: number; y: number; width: number; height: number };
+          reading_bboxes: { [field: string]: { x: number; y: number; width: number; height: number } };
+          actual_values: { [field: string]: number | string };
+          units: { [field: string]: string } | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          device_type: string;
+          brand: string;
+          model: string;
+          device_name?: string | null;
+          image_url: string;
+          image_resolution: { width: number; height: number };
+          display_bbox: { x: number; y: number; width: number; height: number };
+          reading_bboxes: { [field: string]: { x: number; y: number; width: number; height: number } };
+          actual_values: { [field: string]: number | string };
+          units?: { [field: string]: string } | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          device_type?: string;
+          brand?: string;
+          model?: string;
+          device_name?: string | null;
+          image_url?: string;
+          image_resolution?: { width: number; height: number };
+          display_bbox?: { x: number; y: number; width: number; height: number };
+          reading_bboxes?: { [field: string]: { x: number; y: number; width: number; height: number } };
+          actual_values?: { [field: string]: number | string };
+          units?: { [field: string]: string } | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      smart_scan_feedback: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          device_type: string;
+          ocr_prediction: string;
+          corrected_value: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          device_type: string;
+          ocr_prediction: string;
+          corrected_value: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          device_type?: string;
+          ocr_prediction?: string;
+          corrected_value?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;

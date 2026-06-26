@@ -82,9 +82,9 @@ export function ConfirmationSheet({ open, onOpenChange, reading, onSave }: Props
 
       // Parse any numeric candidates from raw text to prefill other fields in case user switches device type
       const numbers = (reading.rawText || "").match(/\b\d{1,3}(?:\.\d)?\b/g) || [];
-      const num0 = numbers.length > 0 ? parseFloat(numbers[0]) : 0;
-      const num1 = numbers.length > 1 ? parseFloat(numbers[1]) : 0;
-      const num2 = numbers.length > 2 ? parseFloat(numbers[2]) : 0;
+      const num0 = numbers[0] ? parseFloat(numbers[0]) : 0;
+      const num1 = numbers[1] ? parseFloat(numbers[1]) : 0;
+      const num2 = numbers[2] ? parseFloat(numbers[2]) : 0;
 
       // Smart pre-population for all possible device types
       setGlucose(d.glucose || (num0 >= 30 && num0 <= 400 ? num0 : 100));
