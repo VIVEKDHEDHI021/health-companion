@@ -3,6 +3,16 @@
 > **Format:** Date | Feature | Files Changed | Result  
 > Newest entries at the top. Never remove historical entries.
 
+## [2026-06-26] Capacitor WebView Invariant Failed / White Screen Fix
+
+**Feature:** Dynamic Hash Routing on Native Mobile  
+**Files Changed:**
+- `src/router.tsx` — Conditionally enabled `createHashHistory()` for Capacitor native platforms.
+- `docs/KNOWN_ISSUES.md` — Updated RESOLVED-001 documentation.
+- `docs/DECISION_LOG.md` — Added DECISION-008.
+
+**Result:** Resolved the "Invariant failed" startup error causing a white screen in the Capacitor Android/iOS WebView by converting native platform routing to use a hash history, while keeping clean browser path-based routing for the web app.
+
 ---
 
 ## [2026-06-26] AI Project Knowledge System

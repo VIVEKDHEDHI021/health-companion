@@ -147,22 +147,26 @@ Set up `supabase gen types typescript --project-id <id> > src/db/types.ts` in CI
 |-------|-------|
 | **Severity** | Critical |
 | **Priority** | Critical |
-| **Platform** | Android |
+| **Platform** | Android, iOS |
 | **Status** | ✅ Resolved |
 | **Discovered** | 2026-06-25 |
-| **Resolved** | 2026-06-25 |
+| **Resolved** | 2026-06-26 |
 
 **Description:**  
-App showed a white screen on launch in the Capacitor WebView. SSR hydration was failing because the WebView did not have a pre-rendered DOM to hydrate.
+App showed a white screen on launch in the Capacitor WebView.
 
-**Root Cause:**  
-TanStack Start's `hydrateRoot` expected a server-rendered DOM. On native, there is no server — only a WebView loading a static HTML file.
+**Root Causes:**  
+1. **Hydration Mismatch:** SSR hydration was failing because the WebView did not have a pre-rendered DOM to hydrate. TanStack Start's `hydrateRoot` expected a server-rendered DOM, but on native there is only a static HTML file.
+2. **History Invariant Failure:** The router threw `Invariant failed` on startup because it default-configured browser URL path routing, which fails on custom local-server/file origins (e.g., `https://localhost/` on native web views).
 
 **Resolution:**  
-- Created `src/entry-client.tsx` with platform-aware mounting
-- On native: `createRoot(rootEl)` — standard React SPA mount
-- On web: `hydrateRoot(document)` — standard SSR hydration
-- Created `generate-index.mjs` to produce a proper `index.html` for the WebView
+- Created `src/entry-client.tsx` with platform-aware mounting:
+  - On native: `createRoot(rootEl)` — standard React SPA mount.
+  - On web: `hydrateRoot(document)` — standard SSR hydration.
+- Configured dynamic router history in `src/router.tsx`:
+  - On native: Uses `createHashHistory()` to handle hash-based routing.
+  - On web: Defaults to standard browser path-based history.
+- Created `generate-index.mjs` to produce a proper SPA `index.html` for the Capacitor WebView.
 
 ---
 

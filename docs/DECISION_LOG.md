@@ -233,3 +233,32 @@ Use Supabase (PostgreSQL + Auth + RLS) as the entire backend — no separate cus
 
 **Constraint:**  
 All API keys requiring server-side protection (Cloud Vision, Gemini) use TanStack Start server route handlers (`src/routes/api/`) since Supabase cannot run arbitrary server code.
+
+---
+
+## DECISION-008: Hash Routing on Capacitor Native Mobile
+
+| Field | Value |
+|-------|-------|
+| **Date** | 2026-06-26 |
+| **Status** | ✅ Active |
+| **Decision Maker** | Developer |
+
+**Decision:**  
+Configure TanStack Router to use `createHashHistory()` when running as a Capacitor native mobile application (Android / iOS), while continuing to use standard browser history on the web.
+
+**Reason:**  
+- Capacitor native mobile applications load from local assets (using protocols like `https://localhost/` or `capacitor://localhost/`) rather than a remote server.
+- Standard path-based routing (`window.location.pathname`) fails to resolve routes correctly on custom WebView origins, throwing `Invariant failed` and causing a white screen.
+- Hash-based history (`#/path`) allows the SPA to handle navigation routes cleanly using the URL hash, which works out of the box in custom WebView origins.
+
+**Benefits:**
+- Resolves the white screen startup/refresh invariant error on both iOS and Android.
+- Retains clean path-based routing (`example.com/path`) on the SSR web target.
+- Zero impact on page layout or UI design.
+
+**Trade-offs:**
+- URLs on mobile will display with a hash (e.g., `https://localhost/#/dashboard`), but since the URL bar is hidden on native apps, this has no visual impact on the user.
+
+**Implementation:**  
+In `src/router.tsx`, check `Capacitor.isNativePlatform()` and pass `createHashHistory()` as the `history` option when instantiating the router.

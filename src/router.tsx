@@ -1,4 +1,5 @@
-import { createRouter, useRouter } from "@tanstack/react-router";
+import { createRouter, useRouter, createHashHistory } from "@tanstack/react-router";
+import { Capacitor } from "@capacitor/core";
 import { routeTree } from "./routeTree.gen";
 
 function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
@@ -55,8 +56,12 @@ function DefaultErrorComponent({ error, reset }: { error: Error; reset: () => vo
 }
 
 export const getRouter = () => {
+  const isMobile = typeof window !== "undefined" && Capacitor.isNativePlatform();
+  const history = isMobile ? createHashHistory() : undefined;
+
   const router = createRouter({
     routeTree,
+    history,
     context: {},
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
