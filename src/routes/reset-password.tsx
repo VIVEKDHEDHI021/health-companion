@@ -5,13 +5,14 @@ import { supabase } from "@/db/client";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
-import { AlertCircle, ArrowLeft, KeyRound, Loader2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, KeyRound, Loader2, Eye, EyeOff } from "lucide-react";
 
 export const Route = createFileRoute("/reset-password")({ component: ResetPage });
 
 function ResetPage() {
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingAuth, setCheckingAuth] = useState(true);
   const [errorInfo, setErrorInfo] = useState<{ code: string; message: string } | null>(null);
@@ -171,15 +172,29 @@ function ResetPage() {
         >
           <div className="space-y-1.5">
             <Label htmlFor="password">New password</Label>
-            <Input
-              id="password"
-              type="password"
-              required
-              minLength={6}
-              placeholder="Min. 6 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                required
+                minLength={6}
+                placeholder="Min. 6 characters"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground focus:outline-none"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
           </div>
           <Button type="submit" className="w-full" size="lg" disabled={loading}>
             {loading ? "Updating..." : "Update password"}
