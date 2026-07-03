@@ -49,6 +49,14 @@ const html = `<!DOCTYPE html>
     <meta name="theme-color" content="#2563eb" />
     <title>GlucoLab</title>
     ${cssFile ? `<link rel="stylesheet" href="/${cssFile}" />` : ""}
+    <script>
+      window.addEventListener("error", function(event) {
+        console.error("HTML GLOBAL ERROR:", event.message, event.error ? event.error.stack : "");
+      });
+      window.addEventListener("unhandledrejection", function(event) {
+        console.error("HTML UNHANDLED REJECTION:", event.reason ? event.reason.message : event.reason, event.reason ? event.reason.stack : "");
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
