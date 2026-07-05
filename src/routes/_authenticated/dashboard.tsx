@@ -131,25 +131,22 @@ function DashboardPage() {
         <div className="flex w-full items-center gap-2 sm:w-[380px]">
           <Button
             onClick={() => setGlucoseOpen(true)}
-            size="lg"
             variant="secondary"
-            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
+            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
           >
             <Plus className="h-4 w-4 text-primary" /> Glucose
           </Button>
           <Button
             onClick={() => setInsulinOpen(true)}
-            size="lg"
             variant="secondary"
-            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
+            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
           >
             <Syringe className="h-4 w-4 text-primary" /> Insulin
           </Button>
           <Button
             onClick={() => setWeightOpen(true)}
-            size="lg"
             variant="secondary"
-            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
+            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
           >
             <Scale className="h-4 w-4 text-primary" /> Weight
           </Button>
