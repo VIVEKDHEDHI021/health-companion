@@ -16,7 +16,7 @@ if (typeof window !== "undefined") {
 const router = getRouter();
 
 const rootEl = document.getElementById("root");
-const isSPA = Capacitor.isNativePlatform() || !rootEl || rootEl.innerHTML.trim() === "";
+const isSPA = Capacitor.isNativePlatform() || (!!rootEl && rootEl.innerHTML.trim() === "");
 
 if (isSPA) {
   createRoot(rootEl || document.body).render(<RouterProvider router={router} />);
