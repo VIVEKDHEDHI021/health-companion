@@ -9,7 +9,6 @@ import {
   Moon,
   Sun,
   Menu,
-  Camera,
   Settings,
   User,
   HelpCircle,
@@ -30,10 +29,16 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/frontend/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/frontend/components/ui/dialog";
 
 const NAV = [
   { to: "/dashboard" as const, icon: Home, label: "Dashboard" },
-  { to: "/scanner" as const, icon: Camera, label: "Scan Device" },
   { to: "/history" as const, icon: History, label: "History" },
   { to: "/reports" as const, icon: BarChart3, label: "Reports" },
   { to: "/export" as const, icon: FileDown, label: "Export" },
@@ -47,6 +52,27 @@ export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const path = location.pathname;
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [showBottomNav, setShowBottomNav] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > lastScrollY && currentScrollY > 50) {
+        // Scrolling down
+        setShowBottomNav(false);
+      } else {
+        // Scrolling up
+        setShowBottomNav(true);
+      }
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -89,13 +115,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const handleHelpClick = () => {
     triggerHapticFeedback();
     setDrawerOpen(false);
-    toast.info("GlucoLab Support: Please contact support@glucolab.com for inquiries.");
+    setHelpOpen(true);
   };
 
   const handleAboutClick = () => {
     triggerHapticFeedback();
     setDrawerOpen(false);
-    toast.info("GlucoLab Pro v2.4.0. Designed for offline-first medical companion logging.");
+    setAboutOpen(true);
   };
 
   // We exclude /scanner from mobile bottom nav to prevent squishing
@@ -107,7 +133,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Top bar */}
       <header className={cn(
         "sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl shrink-0 theme-transition",
-        isMobile && "pt-safe"
+        isMobile ? "pt-[calc(max(env(safe-area-inset-top),28px))]" : ""
       )}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
@@ -296,7 +322,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
       {/* Mobile bottom nav with safe-area spacing */}
       <nav className={cn(
-        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-xl md:hidden shrink-0 theme-transition",
+        "fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-xl md:hidden shrink-0 theme-transition transition-transform duration-300",
+        !showBottomNav && "translate-y-full",
         isMobile && "pb-safe"
       )}>
         <div className="grid grid-cols-4">
@@ -321,25 +348,81 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </nav>
 
-      {/* Floating Action Button (FAB) for Scanner with custom bottom offset */}
-      {path !== "/scanner" && (
-        <button
-          onClick={() => {
-            triggerHapticFeedback();
-            navigate({ to: "/scanner" });
-          }}
-          style={{
-            bottom: isMobile
-              ? "calc(4.5rem + env(safe-area-inset-bottom, 0px))"
-              : "5rem",
-          }}
-          className="fixed right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-lg hover:scale-105 transition-all duration-300 active:scale-95 md:bottom-6 md:right-6 group border border-primary/20 cursor-pointer"
-          aria-label="Scan device"
-        >
-          <Camera className="h-6 w-6 group-hover:rotate-12 transition-transform duration-300" />
-          <span className="sr-only">Scan Device</span>
-        </button>
-      )}
+
+      {/* Help & Support Dialog */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
+              <HelpCircle className="h-5 w-5 text-primary" /> Help & Support
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              Frequently asked questions and support contact.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 my-2 text-sm max-h-[60vh] overflow-y-auto pr-1">
+            <div className="space-y-1">
+              <h4 className="font-semibold text-foreground">How to record readings?</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Click the "+" buttons on the Dashboard to record blood glucose, insulin doses, or body weight. You can categorize readings by time (Before/After meals, Fasting, Bedtime).
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-semibold text-foreground">How to use the Smart Scanner?</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Tap the floating camera button. Hold your phone steady and frame your glucose meter display. Tap capture. The OCR will parse the digits automatically. Review and edit the reading before saving.
+              </p>
+            </div>
+            <div className="space-y-1">
+              <h4 className="font-semibold text-foreground">Does it work offline?</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Yes! GlucoLab runs entirely offline. All data is saved securely on your device. Once you restore internet connection, it automatically syncs with the secure cloud.
+              </p>
+            </div>
+            <div className="border-t border-border/60 my-2 pt-3" />
+            <div className="space-y-1 bg-primary-soft p-3 rounded-2xl border border-primary/10">
+              <h4 className="font-semibold text-primary">Need Contact Support?</h4>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                For questions, feature requests, or technical issues, reach out directly at:
+              </p>
+              <p className="text-xs font-bold text-foreground mt-1">support@glucolab.com</p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* About Dialog */}
+      <Dialog open={aboutOpen} onOpenChange={setAboutOpen}>
+        <DialogContent className="max-w-md rounded-3xl p-6 bg-card border border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl font-bold flex items-center gap-2">
+              <Info className="h-5 w-5 text-primary" /> About GlucoLab
+            </DialogTitle>
+            <DialogDescription className="text-xs text-muted-foreground">
+              App specifications and clinical disclaimers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 my-2 text-sm text-center">
+            <div className="flex flex-col items-center justify-center space-y-2 py-2">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl gradient-primary text-white shadow-soft">
+                <Activity className="h-8 w-8" strokeWidth={2.5} />
+              </div>
+              <h3 className="font-display text-lg font-bold">GlucoLab Pro</h3>
+              <p className="text-xs text-primary font-semibold tracking-widest uppercase">Version 2.4.0 (Build 90)</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed text-left">
+              GlucoLab Pro is a modern, next-generation diabetes management platform. Built to support patients with precise charting, smart OCR display recognition, and fast local database indexing.
+            </p>
+            <div className="border-t border-border/60 my-2 pt-3" />
+            <div className="text-left bg-muted p-3.5 rounded-2xl border border-border/40">
+              <h4 className="text-xs font-bold text-foreground mb-1 uppercase tracking-wide">Medical Disclaimer</h4>
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                This software is intended as a logging utility only and does not supply medical diagnosis or treatment options. Always consult your primary physician or certified endocrinologist before making changes to your insulin regimen or diet.
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

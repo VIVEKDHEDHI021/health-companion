@@ -49,6 +49,7 @@ const html = `<!DOCTYPE html>
     <meta name="theme-color" content="#2563eb" />
     <title>GlucoLab</title>
     ${cssFile ? `<link rel="stylesheet" href="/${cssFile}" />` : ""}
+    <script src="capacitor.js"></script>
     <script>
       window.addEventListener("error", function(event) {
         console.error("HTML GLOBAL ERROR:", event.message, event.error ? event.error.stack : "");

@@ -17,6 +17,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/frontend/components/ui/dialog";
+import { type WeightEntry } from "@/frontend/lib/types";
 
 const schema = z.object({
   entry_date: z
@@ -31,24 +32,28 @@ const schema = z.object({
 type FormData = z.output<typeof schema>;
 type FormInput = z.input<typeof schema>;
 
+interface Props {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  entry?: WeightEntry | null;
+  onSaved?: () => void;
+}
+
 export function WeightDialog({
   open,
   onOpenChange,
+  entry,
   onSaved,
-}: {
-  open: boolean;
-  onOpenChange: (o: boolean) => void;
-  onSaved?: () => void;
-}) {
+}: Props) {
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const form = useForm<FormInput, unknown, FormData>({
     resolver: zodResolver(schema),
-    defaultValues: {
-      entry_date: format(new Date(), "yyyy-MM-dd"),
-      weight_kg: undefined as unknown as number,
-      notes: "",
+    values: {
+      entry_date: entry?.entry_date ?? format(new Date(), "yyyy-MM-dd"),
+      weight_kg: entry?.weight_kg ?? ("" as unknown as number),
+      notes: entry?.notes ?? "",
     },
   });
 
@@ -56,30 +61,35 @@ export function WeightDialog({
     if (!user) return;
     setSaving(true);
     try {
+      const payload = {
+        ...(entry ? { id: entry.id } : {}),
+        user_id: user.id,
+        entry_date: data.entry_date,
+        weight_kg: data.weight_kg,
+        notes: data.notes || null,
+      };
+
       const { error } = await supabase.from("weight_entries").upsert(
-        {
-          user_id: user.id,
-          entry_date: data.entry_date,
-          weight_kg: data.weight_kg,
-          notes: data.notes || null,
-        },
+        payload,
         { onConflict: "user_id,entry_date" },
       );
       if (error) throw error;
-      toast.success("Weight saved");
+      toast.success(entry ? "Weight updated" : "Weight saved");
 
-      // Show real browser desktop notification
-      showLocalNotification(
-        "Weight Entry Logged",
-        `Logged weight: ${data.weight_kg} kg for ${data.entry_date}.`,
-      );
+      if (!entry) {
+        // Show real browser desktop notification
+        showLocalNotification(
+          "Weight Entry Logged",
+          `Logged weight: ${data.weight_kg} kg for ${data.entry_date}.`,
+        );
 
-      // Trigger background push notification to all user's registered devices
-      triggerPushNotification(
-        user.id,
-        "Weight Entry Logged",
-        `Weight: ${data.weight_kg} kg was logged for ${data.entry_date}.`,
-      );
+        // Trigger background push notification to all user's registered devices
+        triggerPushNotification(
+          user.id,
+          "Weight Entry Logged",
+          `Weight: ${data.weight_kg} kg was logged for ${data.entry_date}.`,
+        );
+      }
 
       onOpenChange(false);
       onSaved?.();
@@ -94,7 +104,9 @@ export function WeightDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Log Weight</DialogTitle>
+          <DialogTitle className="text-xl">
+            {entry ? "Edit Weight Entry" : "Log Weight"}
+          </DialogTitle>
         </DialogHeader>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-1.5">

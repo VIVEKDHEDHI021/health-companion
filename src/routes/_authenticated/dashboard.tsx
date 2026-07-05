@@ -9,7 +9,6 @@ import {
   TrendingUp,
   AlertCircle,
   Clock,
-  Camera,
 } from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
 import {
@@ -24,6 +23,7 @@ import {
 import { supabase } from "@/db/client";
 import { healthService } from "@/backend/services/healthService";
 import { useAuth } from "@/frontend/lib/auth-context";
+import { useHealthData } from "@/frontend/providers/data-context";
 import { Button } from "@/frontend/components/ui/button";
 import { GlucoseDialog } from "@/frontend/components/glucose-dialog";
 import { InsulinDialog } from "@/frontend/components/insulin-dialog";
@@ -48,35 +48,19 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function DashboardPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [glucose, setGlucose] = useState<GlucoseEntry[]>([]);
-  const [insulin, setInsulin] = useState<InsulinEntry[]>([]);
-  const [weight, setWeight] = useState<WeightEntry[]>([]);
+  const { glucose, insulin, weight, profileName, refreshData } = useHealthData();
   const [glucoseOpen, setGlucoseOpen] = useState(false);
   const [insulinOpen, setInsulinOpen] = useState(false);
   const [weightOpen, setWeightOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [profileName, setProfileName] = useState<string>("");
   const [days, setDays] = useState<7 | 30 | 90>(7);
 
   const load = async () => {
-    if (!user) return;
-    const [g, i, w, p] = await healthService.getDashboardData();
-    if (g.data) setGlucose(g.data as GlucoseEntry[]);
-    if (i.data) setInsulin(i.data as InsulinEntry[]);
-    if (w.data) setWeight(w.data as WeightEntry[]);
-    if (p.data?.name) setProfileName(p.data.name);
+    await refreshData(true);
   };
 
   useEffect(() => {
-    if (!user) {
-      setGlucose([]);
-      setInsulin([]);
-      setWeight([]);
-      setProfileName("");
-      return;
-    }
-    load();
-    /* eslint-disable-next-line */
+    refreshData(false);
   }, [user]);
 
   const latest = glucose[0];
@@ -129,29 +113,45 @@ function DashboardPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-sm text-muted-foreground">{greeting},</p>
-          <h1 className="font-display text-3xl font-bold sm:text-4xl">
-            {profileName || "there"} 👋
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="font-display text-3xl font-bold sm:text-4xl">
+              {profileName || "there"} 👋
+            </h1>
+            <Button
+              onClick={() => setProfileOpen(true)}
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-1"
+              title="Edit Profile"
+            >
+              <Settings className="h-4.5 w-4.5" />
+            </Button>
+          </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex w-full items-center gap-2 sm:w-[380px]">
           <Button
-            onClick={() => navigate({ to: "/scanner" })}
+            onClick={() => setGlucoseOpen(true)}
             size="lg"
-            className="gradient-primary text-primary-foreground shadow-soft"
+            variant="secondary"
+            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
           >
-            <Camera className="mr-1.5 h-4 w-4" /> Scan Device
+            <Plus className="h-4 w-4 text-primary" /> Glucose
           </Button>
-          <Button onClick={() => setGlucoseOpen(true)} size="lg" variant="secondary">
-            <Plus className="mr-1.5 h-4 w-4" /> Glucose
+          <Button
+            onClick={() => setInsulinOpen(true)}
+            size="lg"
+            variant="secondary"
+            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
+          >
+            <Syringe className="h-4 w-4 text-primary" /> Insulin
           </Button>
-          <Button onClick={() => setInsulinOpen(true)} size="lg" variant="secondary">
-            <Syringe className="mr-1.5 h-4 w-4" /> Insulin
-          </Button>
-          <Button onClick={() => setWeightOpen(true)} size="lg" variant="secondary">
-            <Scale className="mr-1.5 h-4 w-4" /> Weight
-          </Button>
-          <Button onClick={() => setProfileOpen(true)} size="lg" variant="ghost" className="px-3">
-            <Settings className="h-5 w-5" />
+          <Button
+            onClick={() => setWeightOpen(true)}
+            size="lg"
+            variant="secondary"
+            className="flex-1 h-11 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
+          >
+            <Scale className="h-4 w-4 text-primary" /> Weight
           </Button>
         </div>
       </div>

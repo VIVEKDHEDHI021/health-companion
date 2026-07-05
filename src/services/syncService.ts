@@ -24,7 +24,7 @@ export const syncService = {
       Network.addListener("networkStatusChange", (change) => {
         console.log("[SYNC] Network status change detected:", change);
         if (change.connected) {
-          toast.info("Network restored. Syncing offline data...");
+          // Silent sync - no toast message shown to user
           this.syncPendingData();
         }
       });
@@ -171,9 +171,7 @@ export const syncService = {
         }
       }
 
-      if (syncedCount > 0) {
-        toast.success(`Synchronized ${syncedCount} cached offline logs!`);
-      }
+      // Silent sync complete - no toast message shown to user
     } catch (err) {
       console.error("[SYNC] Sync execution failed:", err);
     } finally {

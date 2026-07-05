@@ -20,21 +20,8 @@ let isInitializing = false;
  * and ignore patterns (whitelist includes common symbols to allow proper penalty classification).
  */
 export async function initGlucoseOcr(): Promise<void> {
-  if (glucoseWorker || isInitializing) return;
-  isInitializing = true;
-  try {
-    const worker = await createWorker("eng");
-    await worker.setParameters({
-      tessedit_char_whitelist:
-        "0123456789.ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz%°/: ",
-    });
-    glucoseWorker = worker;
-    console.log("[Glucose OCR] Tesseract worker initialized successfully.");
-  } catch (error) {
-    console.error("[Glucose OCR] Failed to initialize Tesseract worker:", error);
-  } finally {
-    isInitializing = false;
-  }
+  console.log("[Glucose OCR] Disabled to reduce load.");
+  return;
 }
 
 /**

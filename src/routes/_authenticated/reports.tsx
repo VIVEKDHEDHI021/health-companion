@@ -15,6 +15,8 @@ import {
 import { TrendingUp, TrendingDown, Activity } from "lucide-react";
 import { supabase } from "@/db/client";
 import { useAuth } from "@/frontend/lib/auth-context";
+import { useHealthData } from "@/frontend/providers/data-context";
+import { Capacitor } from "@capacitor/core";
 import {
   READING_TYPES,
   type GlucoseEntry,
@@ -30,49 +32,81 @@ export const Route = createFileRoute("/_authenticated/reports")({
 function ReportsPage() {
   const { user } = useAuth();
   const [days, setDays] = useState(30);
-  const [glucose, setGlucose] = useState<GlucoseEntry[]>([]);
-  const [insulin, setInsulin] = useState<InsulinEntry[]>([]);
-  const [weight, setWeight] = useState<WeightEntry[]>([]);
+  const { glucose: globalGlucose, insulin: globalInsulin, weight: globalWeight, refreshData } = useHealthData();
+  const [localGlucose, setLocalGlucose] = useState<GlucoseEntry[]>([]);
+  const [localInsulin, setLocalInsulin] = useState<InsulinEntry[]>([]);
+  const [localWeight, setLocalWeight] = useState<WeightEntry[]>([]);
+
+  const isMobile = Capacitor.isNativePlatform();
 
   useEffect(() => {
+    refreshData(false);
+  }, [user]);
+
+  useEffect(() => {
+    if (isMobile) return;
     if (!user) {
-      setGlucose([]);
-      setInsulin([]);
-      setWeight([]);
+      setLocalGlucose([]);
+      setLocalInsulin([]);
+      setLocalWeight([]);
       return;
     }
     (async () => {
-      const {
-        data: { user: currentUser },
-      } = await supabase.auth.getUser();
-      if (!currentUser) return;
       const sinceIso = subDays(new Date(), days).toISOString();
       const sinceDate = format(subDays(new Date(), days), "yyyy-MM-dd");
       const [g, i, w] = await Promise.all([
         supabase
           .from("glucose_entries")
           .select("*")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .gte("date_time", sinceIso)
           .order("date_time"),
         supabase
           .from("insulin_entries")
           .select("*")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .gte("entry_date", sinceDate)
           .order("entry_date"),
         supabase
           .from("weight_entries")
           .select("*")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .gte("entry_date", sinceDate)
           .order("entry_date"),
       ]);
-      if (g.data) setGlucose(g.data as GlucoseEntry[]);
-      if (i.data) setInsulin(i.data as InsulinEntry[]);
-      if (w.data) setWeight(w.data as WeightEntry[]);
+      if (g.data) setLocalGlucose(g.data as GlucoseEntry[]);
+      if (i.data) setLocalInsulin(i.data as InsulinEntry[]);
+      if (w.data) setLocalWeight(w.data as WeightEntry[]);
     })();
-  }, [user, days]);
+  }, [user, days, isMobile]);
+
+  const glucoseList = isMobile ? globalGlucose : localGlucose;
+  const insulinList = isMobile ? globalInsulin : localInsulin;
+  const weightList = isMobile ? globalWeight : localWeight;
+
+  const glucose = useMemo(() => {
+    if (!isMobile) return glucoseList;
+    const sinceIso = subDays(new Date(), days).toISOString();
+    return glucoseList
+      .filter((g) => g.date_time >= sinceIso)
+      .sort((a, b) => a.date_time.localeCompare(b.date_time));
+  }, [glucoseList, days, isMobile]);
+
+  const insulin = useMemo(() => {
+    if (!isMobile) return insulinList;
+    const sinceDate = format(subDays(new Date(), days), "yyyy-MM-dd");
+    return insulinList
+      .filter((i) => i.entry_date >= sinceDate)
+      .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+  }, [insulinList, days, isMobile]);
+
+  const weight = useMemo(() => {
+    if (!isMobile) return weightList;
+    const sinceDate = format(subDays(new Date(), days), "yyyy-MM-dd");
+    return weightList
+      .filter((w) => w.entry_date >= sinceDate)
+      .sort((a, b) => a.entry_date.localeCompare(b.entry_date));
+  }, [weightList, days, isMobile]);
 
   const stats = useMemo(() => {
     if (!glucose.length) return null;

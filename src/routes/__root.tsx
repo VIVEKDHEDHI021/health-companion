@@ -3,6 +3,7 @@ import { Toaster } from "@/frontend/components/ui/sonner";
 import { AuthProvider } from "@/frontend/lib/auth-context";
 import { ThemeProvider } from "@/frontend/lib/theme";
 import { NotificationProvider } from "@/providers/NotificationProvider";
+import { HealthDataProvider } from "@/frontend/providers/data-context";
 import appCss from "../styles.css?url";
 import { useEffect, useState } from "react";
 import { Capacitor } from "@capacitor/core";
@@ -187,10 +188,12 @@ function RootComponent() {
     <RootShell>
       <ThemeProvider>
         <AuthProvider>
-          <NotificationProvider>
-            <Outlet />
-            <Toaster richColors position="top-center" />
-          </NotificationProvider>
+          <HealthDataProvider>
+            <NotificationProvider>
+              <Outlet />
+              <Toaster richColors position="top-center" />
+            </NotificationProvider>
+          </HealthDataProvider>
         </AuthProvider>
       </ThemeProvider>
     </RootShell>

@@ -15,13 +15,11 @@ if (typeof window !== "undefined") {
 
 const router = getRouter();
 
-if (Capacitor.isNativePlatform()) {
-  const rootEl = document.getElementById("root");
-  if (rootEl) {
-    createRoot(rootEl).render(<RouterProvider router={router} />);
-  } else {
-    createRoot(document.body).render(<RouterProvider router={router} />);
-  }
+const rootEl = document.getElementById("root");
+const isSPA = Capacitor.isNativePlatform() || !rootEl || rootEl.innerHTML.trim() === "";
+
+if (isSPA) {
+  createRoot(rootEl || document.body).render(<RouterProvider router={router} />);
 } else {
   hydrateRoot(document, <StartClient />);
 }
