@@ -232,17 +232,27 @@ function HistoryPage() {
           />
         </div>
         <Input
-          type="date"
+          type={from ? "date" : "text"}
+          placeholder="From date"
           value={from}
           max={to || todayStr}
+          onFocus={(e) => (e.target.type = "date")}
+          onBlur={(e) => {
+            if (!e.target.value) e.target.type = "text";
+          }}
           onChange={(e) => handleFromChange(e.target.value)}
           aria-label="From date"
         />
         <Input
-          type="date"
+          type={to ? "date" : "text"}
+          placeholder="To date"
           value={to}
           min={from}
           max={todayStr}
+          onFocus={(e) => (e.target.type = "date")}
+          onBlur={(e) => {
+            if (!e.target.value) e.target.type = "text";
+          }}
           onChange={(e) => handleToChange(e.target.value)}
           aria-label="To date"
         />
