@@ -125,7 +125,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   };
 
   // We exclude /scanner from mobile bottom nav to prevent squishing
-  const mobileNavItems = NAV.filter((n) => n.to !== "/scanner");
+  const mobileNavItems = NAV;
   const isMobile = Capacitor.isNativePlatform();
 
   return (
