@@ -72,11 +72,14 @@ function DashboardPage() {
   const latestWeight = weight[0];
   const latestInsulin = insulin[0];
   const insulinFmt = latestInsulin
-    ? `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.evening}-${latestInsulin.night}`
+    ? latestInsulin.afternoon && Number(latestInsulin.afternoon) > 0
+      ? `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.afternoon}-${latestInsulin.evening}-${latestInsulin.night}`
+      : `${latestInsulin.morning}-${latestInsulin.lunch}-${latestInsulin.evening}-${latestInsulin.night}`
     : "—";
   const insulinTotal = latestInsulin
     ? Number(latestInsulin.morning) +
       Number(latestInsulin.lunch) +
+      (Number(latestInsulin.afternoon) || 0) +
       Number(latestInsulin.evening) +
       Number(latestInsulin.night)
     : 0;

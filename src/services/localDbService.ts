@@ -51,6 +51,7 @@ export const localDbService = {
           user_id TEXT,
           morning INTEGER,
           lunch INTEGER,
+          afternoon INTEGER DEFAULT 0,
           evening INTEGER,
           night INTEGER,
           entry_date TEXT,
@@ -87,6 +88,14 @@ export const localDbService = {
       
       await database.execute(tablesSchema);
       console.log("[SQLITE] Database schema verified.");
+
+      // Migration: Add afternoon column if not exists
+      try {
+        await database.execute("ALTER TABLE insulin_entries ADD COLUMN afternoon INTEGER DEFAULT 0");
+        console.log("[SQLITE] Successfully added afternoon column to insulin_entries table.");
+      } catch (e) {
+        // Will fail if the column already exists, which is expected on subsequent runs
+      }
     } catch (err) {
       console.error("[SQLITE] Failed to initialize local SQLite database:", err);
     }
@@ -145,9 +154,9 @@ export const localDbService = {
     try {
       for (const entry of entries) {
         await database.run(
-          `INSERT OR REPLACE INTO insulin_entries (id, user_id, morning, lunch, evening, night, entry_date, sync_status) 
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-          [entry.id, entry.user_id, entry.morning, entry.lunch, entry.evening, entry.night, entry.entry_date, entry.sync_status || "synced"]
+          `INSERT OR REPLACE INTO insulin_entries (id, user_id, morning, lunch, afternoon, evening, night, entry_date, sync_status) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [entry.id, entry.user_id, entry.morning, entry.lunch, entry.afternoon || 0, entry.evening, entry.night, entry.entry_date, entry.sync_status || "synced"]
         );
       }
     } catch (err) {

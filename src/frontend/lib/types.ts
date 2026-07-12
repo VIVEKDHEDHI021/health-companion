@@ -31,6 +31,7 @@ export interface InsulinEntry {
   entry_date: string;
   morning: number;
   lunch: number;
+  afternoon?: number;
   evening: number;
   night: number;
   notes: string | null;

@@ -98,7 +98,7 @@ function ReportsPage() {
 
   const insulinTrend = insulin.map((i) => ({
     date: format(new Date(i.entry_date), "MM/dd"),
-    total: Number(i.morning) + Number(i.lunch) + Number(i.evening) + Number(i.night),
+    total: Number(i.morning) + Number(i.lunch) + (Number(i.afternoon) || 0) + Number(i.evening) + Number(i.night),
   }));
 
   const weightTrend = weight.map((w) => ({

@@ -78,6 +78,7 @@ export const syncService = {
             user_id: i.user_id,
             morning: i.morning,
             lunch: i.lunch,
+            afternoon: i.afternoon || 0,
             evening: i.evening,
             night: i.night,
             entry_date: i.entry_date,
