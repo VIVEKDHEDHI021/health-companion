@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import {
   Activity,
   Droplet,
@@ -424,7 +425,10 @@ function DashboardPage() {
 
       {/* Fullscreen Trend Detail Modal */}
       {isFullscreen && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-background p-4 md:p-6 overflow-hidden animate-fade-in">
+        <div className={cn(
+          "fixed inset-0 z-[100] flex flex-col bg-background p-4 md:p-6 overflow-hidden animate-fade-in",
+          Capacitor.isNativePlatform() ? "pt-[calc(max(env(safe-area-inset-top),28px))]" : ""
+        )}>
           {/* Header */}
           <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
             <div>

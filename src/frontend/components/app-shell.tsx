@@ -140,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-background text-foreground flex flex-col theme-transition">
       {/* Top bar */}
       <header className={cn(
-        "sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl shrink-0 theme-transition",
+        "fixed top-0 left-0 right-0 z-40 border-b border-border bg-card/80 backdrop-blur-xl shrink-0 theme-transition",
         isMobile ? "pt-[calc(max(env(safe-area-inset-top),28px))]" : ""
       )}>
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -366,10 +366,11 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      {/* Main viewport with bottom safe-area considerations */}
       <main className={cn(
-        "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 flex-grow w-full",
-        isMobile ? "pb-[calc(6rem+env(safe-area-inset-bottom,0px))]" : "pb-24 md:pb-8"
+        "mx-auto max-w-7xl px-4 flex-grow w-full theme-transition",
+        isMobile 
+          ? "pt-[calc(4.5rem+max(env(safe-area-inset-top),28px))] pb-[calc(6.5rem+env(safe-area-inset-bottom,0px))]" 
+          : "pt-24 pb-24 md:pb-8"
       )}>
         {children}
       </main>
