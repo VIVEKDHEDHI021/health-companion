@@ -103,10 +103,18 @@ function RootComponent() {
     let lastTime = 0;
     const backButtonListener = import("@capacitor/app").then(({ App }) => {
       return App.addListener("backButton", (event) => {
-        // If any dialog is open, close it first and consume the back press
+        // If any dialog, sheet, drawer or custom fullscreen overlay is open, close it first and consume the back press
         const openDialog = document.querySelector('[role="dialog"]');
-        if (openDialog) {
-          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape" }));
+        const openTrend = document.querySelector('.fullscreen-trend-modal');
+        if (openDialog || openTrend) {
+          const escEvent = new KeyboardEvent("keydown", {
+            key: "Escape",
+            code: "Escape",
+            bubbles: true,
+            cancelable: true,
+          });
+          document.dispatchEvent(escEvent);
+          window.dispatchEvent(escEvent);
           return;
         }
 

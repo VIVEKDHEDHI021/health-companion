@@ -172,6 +172,17 @@ function DashboardPage() {
     }
   }, [chartData]);
 
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
   const matchingInsulin = useMemo(() => {
     if (!selectedPoint) return null;
     const glucoseDateStr = selectedPoint.date_time.split("T")[0];
@@ -426,7 +437,7 @@ function DashboardPage() {
       {/* Fullscreen Trend Detail Modal */}
       {isFullscreen && (
         <div className={cn(
-          "fixed inset-0 z-[100] flex flex-col bg-background p-4 md:p-6 overflow-hidden animate-fade-in",
+          "fullscreen-trend-modal fixed inset-0 z-[100] flex flex-col bg-background p-4 md:p-6 overflow-hidden animate-fade-in",
           Capacitor.isNativePlatform() ? "pt-[calc(max(env(safe-area-inset-top),28px))]" : ""
         )}>
           {/* Header */}
