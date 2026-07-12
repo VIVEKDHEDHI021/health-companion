@@ -11,6 +11,8 @@ import {
   Clock,
   Maximize2,
   X,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
 import {
@@ -160,7 +162,7 @@ function DashboardPage() {
     if (chartData.length > 0) {
       const exists = selectedPoint ? chartData.find((p) => p.id === selectedPoint.id) : null;
       if (!exists) {
-        setSelectedPoint(chartData[chartData.length - 1]);
+        setSelectedPoint(chartData[0]);
       } else {
         setSelectedPoint(exists);
       }
@@ -168,6 +170,26 @@ function DashboardPage() {
       setSelectedPoint(null);
     }
   }, [chartData]);
+
+  const matchingInsulin = useMemo(() => {
+    if (!selectedPoint) return null;
+    const glucoseDateStr = selectedPoint.date_time.split("T")[0];
+    return insulin.find((ins) => ins.entry_date.split("T")[0] === glucoseDateStr);
+  }, [selectedPoint, insulin]);
+
+  const matchingInsulinFmt = useMemo(() => {
+    if (!matchingInsulin) return "—";
+    const morning = Number(matchingInsulin.morning) || 0;
+    const lunch = Number(matchingInsulin.lunch) || 0;
+    const afternoon = Number(matchingInsulin.afternoon) || 0;
+    const evening = Number(matchingInsulin.evening) || 0;
+    const night = Number(matchingInsulin.night) || 0;
+    
+    if (afternoon > 0) {
+      return `${morning}-${lunch}-${afternoon}-${evening}-${night} units`;
+    }
+    return `${morning}-${lunch}-${evening}-${night} units`;
+  }, [matchingInsulin]);
 
   return (
     <>
@@ -222,20 +244,6 @@ function DashboardPage() {
             <p className="text-xs text-muted-foreground">Target zone: 70–180 mg/dL</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {/* Zoom Control */}
-            <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-1 rounded-lg border border-border/50 h-9">
-              <span className="text-[9px] font-bold text-muted-foreground uppercase">Zoom</span>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                step="0.5"
-                value={zoom}
-                onChange={(e) => setZoom(Number(e.target.value))}
-                className="w-16 h-1 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary"
-              />
-              <span className="text-[10px] font-bold text-foreground min-w-[15px] text-right">{zoom}x</span>
-            </div>
             <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
               <TabsList className="grid w-[150px] grid-cols-3 h-9">
                 <TabsTrigger value="7" className="text-xs">7D</TabsTrigger>
@@ -249,7 +257,7 @@ function DashboardPage() {
               className="h-9 w-9 rounded-lg"
               title="Expand to Fullscreen Detail"
               onClick={() => {
-                setSelectedPoint(chartData[chartData.length - 1] || null);
+                setSelectedPoint(chartData[0] || null);
                 setIsFullscreen(true);
               }}
             >
@@ -259,7 +267,7 @@ function DashboardPage() {
         </div>
         {chartData.length > 0 ? (
           <div className="h-56 sm:h-64 w-full overflow-x-auto overflow-y-hidden scrollbar-thin">
-            <div style={{ width: `${zoom * 100}%`, height: "100%", minWidth: "100%" }}>
+            <div style={{ width: "100%", height: "100%", minWidth: "100%" }}>
               <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
@@ -521,48 +529,90 @@ function DashboardPage() {
           <div className="bg-card rounded-2xl border border-border p-4 shadow-soft flex flex-col gap-3 min-h-[160px] overflow-y-auto">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reading Details</h3>
             {selectedPoint ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {/* Large Glucose */}
-                <div className="flex items-center gap-4 bg-muted/40 p-3 rounded-xl border border-border/50">
-                  <div className="text-center min-w-[70px]">
-                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Glucose</span>
-                    <span className="font-display text-3xl font-extrabold text-foreground">{selectedPoint.glucose}</span>
-                    <span className="text-[10px] text-muted-foreground ml-0.5">mg/dL</span>
+              <div className="space-y-4">
+                {/* Navigation Controls */}
+                {chartData.length > 1 && (
+                  <div className="flex items-center justify-between bg-muted/40 p-2.5 rounded-xl border border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const idx = chartData.findIndex((p) => p.id === selectedPoint.id);
+                        if (idx > 0) {
+                          setSelectedPoint(chartData[idx - 1]);
+                        }
+                      }}
+                      disabled={chartData.findIndex((p) => p.id === selectedPoint.id) === 0}
+                      className="h-8 text-xs font-semibold flex items-center gap-1 hover:bg-card hover:shadow-soft active:scale-95 transition-all"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                      Previous
+                    </Button>
+                    <span className="text-xs text-muted-foreground font-display font-medium">
+                      Reading <span className="font-bold text-foreground">{chartData.findIndex((p) => p.id === selectedPoint.id) + 1}</span> of <span className="font-bold text-foreground">{chartData.length}</span>
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        const idx = chartData.findIndex((p) => p.id === selectedPoint.id);
+                        if (idx !== -1 && idx < chartData.length - 1) {
+                          setSelectedPoint(chartData[idx + 1]);
+                        }
+                      }}
+                      disabled={chartData.findIndex((p) => p.id === selectedPoint.id) === chartData.length - 1}
+                      className="h-8 text-xs font-semibold flex items-center gap-1 hover:bg-card hover:shadow-soft active:scale-95 transition-all"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
                   </div>
-                  <div className="flex-1">
-                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Status</span>
-                    {(() => {
-                      const status = glucoseStatus(selectedPoint.glucose, selectedPoint.type);
-                      if (status === "low") {
-                        return <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-500 border border-red-500/20 mt-1">Low Glucose</span>;
-                      }
-                      if (status === "high") {
-                        return <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500 border border-amber-500/20 mt-1">High Glucose</span>;
-                      }
-                      return <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500 border border-emerald-500/20 mt-1">Normal</span>;
-                    })()}
+                )}
+
+                {/* Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {/* Large Glucose */}
+                  <div className="flex items-center gap-4 bg-muted/40 p-3 rounded-xl border border-border/50">
+                    <div className="text-center min-w-[70px]">
+                      <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Glucose</span>
+                      <span className="font-display text-3xl font-extrabold text-foreground">{selectedPoint.glucose}</span>
+                      <span className="text-[10px] text-muted-foreground ml-0.5">mg/dL</span>
+                    </div>
+                    <div className="flex-1">
+                      <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Status</span>
+                      {(() => {
+                        const status = glucoseStatus(selectedPoint.glucose, selectedPoint.type);
+                        if (status === "low") {
+                          return <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-500 border border-red-500/20 mt-1">Low Glucose</span>;
+                        }
+                        if (status === "high") {
+                          return <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500 border border-amber-500/20 mt-1">High Glucose</span>;
+                        }
+                        return <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500 border border-emerald-500/20 mt-1">Normal</span>;
+                      })()}
+                    </div>
                   </div>
-                </div>
 
-                {/* Date & Time */}
-                <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50">
-                  <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Date & Time</span>
-                  <span className="text-sm font-semibold mt-1 text-foreground">{selectedPoint.fullTime}</span>
-                  <span className="text-xs text-muted-foreground mt-0.5">{READING_LABELS[selectedPoint.type as ReadingType] || selectedPoint.type}</span>
-                </div>
+                  {/* Date & Time */}
+                  <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50">
+                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Date & Time</span>
+                    <span className="text-sm font-semibold mt-1 text-foreground">{selectedPoint.fullTime}</span>
+                    <span className="text-xs text-muted-foreground mt-0.5">{READING_LABELS[selectedPoint.type as ReadingType] || selectedPoint.type}</span>
+                  </div>
 
-                {/* Extra Details: Food & Notes */}
-                <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50 col-span-1 sm:col-span-2 md:col-span-1">
-                  <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Notes & Symptoms</span>
-                  <p className="text-xs mt-1 text-foreground truncate">
-                    <span className="font-semibold">Food:</span> {selectedPoint.food || "—"}
-                  </p>
-                  <p className="text-xs mt-0.5 text-foreground truncate">
-                    <span className="font-semibold">Symptoms:</span> {selectedPoint.symptoms || "—"}
-                  </p>
-                  <p className="text-xs mt-0.5 text-foreground truncate">
-                    <span className="font-semibold">Notes:</span> {selectedPoint.notes || "—"}
-                  </p>
+                  {/* Extra Details: Food, Insulin & Notes */}
+                  <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50 col-span-1 sm:col-span-2 md:col-span-1">
+                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Notes & Treatment</span>
+                    <p className="text-xs mt-1 text-foreground truncate">
+                      <span className="font-semibold">Food:</span> {selectedPoint.food || "—"}
+                    </p>
+                    <p className="text-xs mt-0.5 text-foreground truncate">
+                      <span className="font-semibold">Insulin:</span> {matchingInsulinFmt}
+                    </p>
+                    <p className="text-xs mt-0.5 text-foreground truncate">
+                      <span className="font-semibold">Notes:</span> {selectedPoint.notes || "—"}
+                    </p>
+                  </div>
                 </div>
               </div>
             ) : (
