@@ -9,6 +9,8 @@ import {
   TrendingUp,
   AlertCircle,
   Clock,
+  Maximize2,
+  X,
 } from "lucide-react";
 import { format, subDays, isAfter } from "date-fns";
 import {
@@ -35,6 +37,7 @@ import {
   type GlucoseEntry,
   type InsulinEntry,
   type WeightEntry,
+  type ReadingType,
 } from "@/frontend/lib/types";
 import { cn } from "@/frontend/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/frontend/components/ui/tabs";
@@ -43,6 +46,45 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
   head: () => ({ meta: [{ title: "Dashboard — GlucoLab" }] }),
 });
+
+const getPointColor = (glucose: number, type: any) => {
+  const status = glucoseStatus(glucose, type);
+  if (status === "low") return "oklch(0.62 0.18 29)"; // Red for low
+  if (status === "high") return "oklch(0.58 0.18 55)"; // Amber/orange-red for high
+  return "oklch(0.62 0.15 155)"; // Green for normal
+};
+
+const CustomDot = (props: any) => {
+  const { cx, cy, payload } = props;
+  if (!cx || !cy) return null;
+  const color = getPointColor(payload.glucose, payload.type);
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={4.5}
+      fill={color}
+      stroke="var(--card)"
+      strokeWidth={1.5}
+    />
+  );
+};
+
+const CustomActiveDot = (props: any) => {
+  const { cx, cy, payload } = props;
+  if (!cx || !cy) return null;
+  const color = getPointColor(payload.glucose, payload.type);
+  return (
+    <circle
+      cx={cx}
+      cy={cy}
+      r={6.5}
+      fill={color}
+      stroke="var(--card)"
+      strokeWidth={2}
+    />
+  );
+};
 
 function DashboardPage() {
   const navigate = useNavigate();
@@ -54,6 +96,8 @@ function DashboardPage() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [days, setDays] = useState<7 | 30 | 90>(7);
   const [fabOpen, setFabOpen] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedPoint, setSelectedPoint] = useState<any>(null);
 
   const load = async () => {
     await refreshData(true);
@@ -94,13 +138,18 @@ function DashboardPage() {
       [...trendReadings].reverse().map((r) => {
         const dateObj = new Date(r.date_time);
         return {
-          time: format(dateObj, days === 7 ? "MM/dd HH:mm" : "MM/dd"),
+          time: format(dateObj, "MM/dd HH:mm"),
           fullTime: format(dateObj, "MMM d, yyyy HH:mm"),
           glucose: Number(r.glucose),
           type: r.reading_type,
+          food: r.food,
+          notes: r.notes,
+          symptoms: r.symptoms,
+          date_time: r.date_time,
+          id: r.id,
         };
       }),
-    [trendReadings, days],
+    [trendReadings],
   );
 
   return (
@@ -155,20 +204,55 @@ function DashboardPage() {
             <h2 className="font-display text-lg font-bold">{days}-day glucose trend</h2>
             <p className="text-xs text-muted-foreground">Target zone: 70–180 mg/dL</p>
           </div>
-          <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
-            <TabsList className="grid w-[240px] grid-cols-3">
-              <TabsTrigger value="7">7 Days</TabsTrigger>
-              <TabsTrigger value="30">30 Days</TabsTrigger>
-              <TabsTrigger value="90">90 Days</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          <div className="flex items-center gap-2">
+            <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
+              <TabsList className="grid w-[200px] grid-cols-3">
+                <TabsTrigger value="7">7D</TabsTrigger>
+                <TabsTrigger value="30">30D</TabsTrigger>
+                <TabsTrigger value="90">90D</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-9 w-9 rounded-lg"
+              title="Expand to Fullscreen Detail"
+              onClick={() => {
+                setSelectedPoint(chartData[chartData.length - 1] || null);
+                setIsFullscreen(true);
+              }}
+            >
+              <Maximize2 className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
         {chartData.length > 0 ? (
           <div className="h-56 sm:h-64 w-full">
             <ResponsiveContainer>
-              <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+              <LineChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                onClick={(state) => {
+                  if (state && state.activePayload && state.activePayload.length) {
+                    setSelectedPoint(state.activePayload[0].payload);
+                    setIsFullscreen(true);
+                  }
+                }}
+              >
                 <ReferenceArea y1={70} y2={180} fill="oklch(0.62 0.15 155)" fillOpacity={0.08} />
-                <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                <XAxis
+                  dataKey="date_time"
+                  tick={{ fontSize: 10 }}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(tick) => {
+                    try {
+                      return format(new Date(tick), days === 7 ? "MM/dd HH:mm" : "MM/dd");
+                    } catch {
+                      return tick;
+                    }
+                  }}
+                />
                 <YAxis
                   tick={{ fontSize: 11 }}
                   tickLine={false}
@@ -189,7 +273,7 @@ function DashboardPage() {
                           </div>
                           {data.type && (
                             <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                              Type: {data.type}
+                              Type: {READING_LABELS[data.type as ReadingType] || data.type}
                             </div>
                           )}
                         </div>
@@ -203,8 +287,8 @@ function DashboardPage() {
                   dataKey="glucose"
                   stroke="var(--primary)"
                   strokeWidth={2.5}
-                  dot={{ r: 3, fill: "var(--primary)" }}
-                  activeDot={{ r: 5 }}
+                  dot={<CustomDot />}
+                  activeDot={<CustomActiveDot />}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -308,6 +392,156 @@ function DashboardPage() {
           <Plus className="h-6 w-6 text-primary-foreground" />
         </Button>
       </div>
+
+      {/* Fullscreen Trend Detail Modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-background p-4 md:p-6 overflow-hidden animate-fade-in">
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-border pb-3 mb-4">
+            <div>
+              <h2 className="font-display text-xl font-bold text-foreground">Glucose Trend Analysis</h2>
+              <p className="text-xs text-muted-foreground">Tap on any point to view reading details</p>
+            </div>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-xl h-10 w-10"
+              onClick={() => setIsFullscreen(false)}
+            >
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Chart Container */}
+          <div className="flex-1 min-h-[250px] w-full bg-card rounded-2xl border border-border p-4 shadow-soft mb-4 flex flex-col overflow-hidden">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trend Graph ({days} days)</span>
+              <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
+                <TabsList className="grid w-[180px] grid-cols-3 h-8">
+                  <TabsTrigger value="7" className="text-xs py-0.5">7D</TabsTrigger>
+                  <TabsTrigger value="30" className="text-xs py-0.5">30D</TabsTrigger>
+                  <TabsTrigger value="90" className="text-xs py-0.5">90D</TabsTrigger>
+                </TabsList>
+              </Tabs>
+            </div>
+            <div className="flex-1 w-full min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={chartData}
+                  margin={{ top: 10, right: 15, left: -20, bottom: 5 }}
+                  onClick={(state) => {
+                    if (state && state.activePayload && state.activePayload.length) {
+                      setSelectedPoint(state.activePayload[0].payload);
+                    }
+                  }}
+                >
+                  <ReferenceArea y1={70} y2={180} fill="oklch(0.62 0.15 155)" fillOpacity={0.08} />
+                  <XAxis
+                    dataKey="date_time"
+                    tick={{ fontSize: 10 }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(tick) => {
+                      try {
+                        return format(new Date(tick), days === 7 ? "MM/dd HH:mm" : "MM/dd");
+                      } catch {
+                        return tick;
+                      }
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11 }}
+                    tickLine={false}
+                    axisLine={false}
+                    domain={[40, "auto"]}
+                  />
+                  <Tooltip
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="rounded-xl border border-border bg-popover p-3 shadow-md text-xs space-y-1">
+                            <p className="font-semibold text-foreground">{data.fullTime}</p>
+                            <div className="flex items-center gap-1.5">
+                              <span className="h-2 w-2 rounded-full bg-primary" />
+                              <span className="text-muted-foreground">Glucose:</span>
+                              <span className="font-bold text-foreground">{data.glucose} mg/dL</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
+                    }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="glucose"
+                    stroke="var(--primary)"
+                    strokeWidth={3}
+                    dot={<CustomDot />}
+                    activeDot={<CustomActiveDot />}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Details Panel */}
+          <div className="bg-card rounded-2xl border border-border p-4 shadow-soft flex flex-col gap-3 min-h-[160px] overflow-y-auto">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reading Details</h3>
+            {selectedPoint ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {/* Large Glucose */}
+                <div className="flex items-center gap-4 bg-muted/40 p-3 rounded-xl border border-border/50">
+                  <div className="text-center min-w-[70px]">
+                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Glucose</span>
+                    <span className="font-display text-3xl font-extrabold text-foreground">{selectedPoint.glucose}</span>
+                    <span className="text-[10px] text-muted-foreground ml-0.5">mg/dL</span>
+                  </div>
+                  <div className="flex-1">
+                    <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Status</span>
+                    {(() => {
+                      const status = glucoseStatus(selectedPoint.glucose, selectedPoint.type);
+                      if (status === "low") {
+                        return <span className="inline-flex items-center rounded-full bg-red-500/10 px-2 py-0.5 text-xs font-semibold text-red-500 border border-red-500/20 mt-1">Low Glucose</span>;
+                      }
+                      if (status === "high") {
+                        return <span className="inline-flex items-center rounded-full bg-amber-500/10 px-2 py-0.5 text-xs font-semibold text-amber-500 border border-amber-500/20 mt-1">High Glucose</span>;
+                      }
+                      return <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-semibold text-emerald-500 border border-emerald-500/20 mt-1">Normal</span>;
+                    })()}
+                  </div>
+                </div>
+
+                {/* Date & Time */}
+                <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50">
+                  <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Date & Time</span>
+                  <span className="text-sm font-semibold mt-1 text-foreground">{selectedPoint.fullTime}</span>
+                  <span className="text-xs text-muted-foreground mt-0.5">{READING_LABELS[selectedPoint.type as ReadingType] || selectedPoint.type}</span>
+                </div>
+
+                {/* Extra Details: Food & Notes */}
+                <div className="flex flex-col justify-center bg-muted/40 p-3 rounded-xl border border-border/50 col-span-1 sm:col-span-2 md:col-span-1">
+                  <span className="block text-[9px] uppercase font-bold text-muted-foreground tracking-wide">Notes & Symptoms</span>
+                  <p className="text-xs mt-1 text-foreground truncate">
+                    <span className="font-semibold">Food:</span> {selectedPoint.food || "—"}
+                  </p>
+                  <p className="text-xs mt-0.5 text-foreground truncate">
+                    <span className="font-semibold">Symptoms:</span> {selectedPoint.symptoms || "—"}
+                  </p>
+                  <p className="text-xs mt-0.5 text-foreground truncate">
+                    <span className="font-semibold">Notes:</span> {selectedPoint.notes || "—"}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground py-4">
+                Tap on any data point in the graph above to view its complete details.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
