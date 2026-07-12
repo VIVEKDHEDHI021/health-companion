@@ -375,8 +375,8 @@ function DashboardPage() {
             </span>
             <Button
               onClick={() => {
-                setGlucoseOpen(true);
                 setFabOpen(false);
+                setTimeout(() => setGlucoseOpen(true), 150);
               }}
               variant="secondary"
               size="icon"
@@ -393,8 +393,8 @@ function DashboardPage() {
             </span>
             <Button
               onClick={() => {
-                setInsulinOpen(true);
                 setFabOpen(false);
+                setTimeout(() => setInsulinOpen(true), 150);
               }}
               variant="secondary"
               size="icon"
@@ -411,8 +411,8 @@ function DashboardPage() {
             </span>
             <Button
               onClick={() => {
-                setWeightOpen(true);
                 setFabOpen(false);
+                setTimeout(() => setWeightOpen(true), 150);
               }}
               variant="secondary"
               size="icon"
