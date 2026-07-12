@@ -370,4 +370,20 @@
   bottom: env(safe-area-inset-bottom, 0px);
 }
 
+/* Prevent default mobile browser orange focus rings and tap highlights */
+*:focus,
+*:focus-visible,
+*:active {
+  outline: none !important;
+}
+
+div,
+svg,
+section,
+input,
+button {
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+
 
