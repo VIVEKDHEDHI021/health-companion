@@ -385,5 +385,17 @@ button {
   -webkit-tap-highlight-color: transparent !important;
 }
 
+/* Hide scrollbars globally across the entire app for all elements */
+::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+* {
+  -ms-overflow-style: none !important; /* IE and Edge */
+  scrollbar-width: none !important; /* Firefox */
+}
+
 
 
