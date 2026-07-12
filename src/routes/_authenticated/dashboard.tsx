@@ -108,6 +108,7 @@ function DashboardPage() {
   const [fabOpen, setFabOpen] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedPoint, setSelectedPoint] = useState<any>(null);
+  const [zoom, setZoom] = useState<number>(1);
 
   const load = async () => {
     await refreshData(true);
@@ -214,12 +215,26 @@ function DashboardPage() {
             <h2 className="font-display text-lg font-bold">{days}-day glucose trend</h2>
             <p className="text-xs text-muted-foreground">Target zone: 70–180 mg/dL</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Zoom Control */}
+            <div className="flex items-center gap-1.5 bg-muted/40 px-2 py-1 rounded-lg border border-border/50 h-9">
+              <span className="text-[9px] font-bold text-muted-foreground uppercase">Zoom</span>
+              <input
+                type="range"
+                min="1"
+                max="5"
+                step="0.5"
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                className="w-16 h-1 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <span className="text-[10px] font-bold text-foreground min-w-[15px] text-right">{zoom}x</span>
+            </div>
             <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
-              <TabsList className="grid w-[200px] grid-cols-3">
-                <TabsTrigger value="7">7D</TabsTrigger>
-                <TabsTrigger value="30">30D</TabsTrigger>
-                <TabsTrigger value="90">90D</TabsTrigger>
+              <TabsList className="grid w-[150px] grid-cols-3 h-9">
+                <TabsTrigger value="7" className="text-xs">7D</TabsTrigger>
+                <TabsTrigger value="30" className="text-xs">30D</TabsTrigger>
+                <TabsTrigger value="90" className="text-xs">90D</TabsTrigger>
               </TabsList>
             </Tabs>
             <Button
@@ -237,8 +252,9 @@ function DashboardPage() {
           </div>
         </div>
         {chartData.length > 0 ? (
-          <div className="h-56 sm:h-64 w-full">
-            <ResponsiveContainer>
+          <div className="h-56 sm:h-64 w-full overflow-x-auto overflow-y-hidden scrollbar-thin">
+            <div style={{ width: `${zoom * 100}%`, height: "100%", minWidth: "100%" }}>
+              <ResponsiveContainer width="100%" height="100%">
               <LineChart
                 data={chartData}
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
@@ -317,6 +333,7 @@ function DashboardPage() {
               </LineChart>
             </ResponsiveContainer>
           </div>
+        </div>
         ) : (
           <EmptyHint
             icon={<Activity className="h-6 w-6" />}
@@ -438,18 +455,35 @@ function DashboardPage() {
 
           {/* Chart Container */}
           <div className="flex-1 min-h-[250px] w-full bg-card rounded-2xl border border-border p-4 shadow-soft mb-4 flex flex-col overflow-hidden">
-            <div className="mb-2 flex items-center justify-between">
+            <div className="mb-2 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Trend Graph ({days} days)</span>
-              <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
-                <TabsList className="grid w-[180px] grid-cols-3 h-8">
-                  <TabsTrigger value="7" className="text-xs py-0.5">7D</TabsTrigger>
-                  <TabsTrigger value="30" className="text-xs py-0.5">30D</TabsTrigger>
-                  <TabsTrigger value="90" className="text-xs py-0.5">90D</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="flex items-center gap-4">
+                {/* Zoom control */}
+                <div className="flex items-center gap-1.5 bg-muted/40 px-3 py-1 rounded-xl border border-border/50 h-8">
+                  <span className="text-[10px] font-bold text-muted-foreground uppercase">Zoom</span>
+                  <input
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="0.5"
+                    value={zoom}
+                    onChange={(e) => setZoom(Number(e.target.value))}
+                    className="w-20 h-1 bg-primary/20 rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <span className="text-xs font-bold text-foreground min-w-[20px] text-right">{zoom}x</span>
+                </div>
+                <Tabs value={String(days)} onValueChange={(val) => setDays(Number(val) as 7 | 30 | 90)}>
+                  <TabsList className="grid w-[180px] grid-cols-3 h-8">
+                    <TabsTrigger value="7" className="text-xs py-0.5">7D</TabsTrigger>
+                    <TabsTrigger value="30" className="text-xs py-0.5">30D</TabsTrigger>
+                    <TabsTrigger value="90" className="text-xs py-0.5">90D</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </div>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 w-full min-h-0 overflow-x-auto overflow-y-hidden scrollbar-thin">
+              <div style={{ width: `${zoom * 100}%`, height: "100%", minWidth: "100%" }}>
+                <ResponsiveContainer width="100%" height="100%">
                 <LineChart
                   data={chartData}
                   margin={{ top: 10, right: 15, left: -20, bottom: 5 }}
@@ -521,6 +555,7 @@ function DashboardPage() {
               </ResponsiveContainer>
             </div>
           </div>
+        </div>
 
           {/* Details Panel */}
           <div className="bg-card rounded-2xl border border-border p-4 shadow-soft flex flex-col gap-3 min-h-[160px] overflow-y-auto">
