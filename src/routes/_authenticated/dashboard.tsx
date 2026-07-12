@@ -319,6 +319,7 @@ function DashboardPage() {
                   dataKey="glucose"
                   stroke="var(--primary)"
                   strokeWidth={2.5}
+                  isAnimationActive={false}
                   dot={
                     <CustomDot
                       selectedPoint={selectedPoint}
@@ -524,6 +525,7 @@ function DashboardPage() {
                     dataKey="glucose"
                     stroke="var(--primary)"
                     strokeWidth={3}
+                    isAnimationActive={false}
                     dot={
                       <CustomDot
                         selectedPoint={selectedPoint}

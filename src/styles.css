@@ -254,54 +254,54 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.98);
+    transform: scale(0.98) translate3d(0, 0, 0);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    transform: scale(1) translate3d(0, 0, 0);
   }
 }
 
 @keyframes slideUp {
   from {
-    transform: translateY(100%);
+    transform: translateY(100%) translate3d(0, 0, 0);
     opacity: 0.5;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) translate3d(0, 0, 0);
     opacity: 1;
   }
 }
 
 @keyframes slideUpCard {
   from {
-    transform: translateY(16px);
+    transform: translateY(16px) translate3d(0, 0, 0);
     opacity: 0;
   }
   to {
-    transform: translateY(0);
+    transform: translateY(0) translate3d(0, 0, 0);
     opacity: 1;
   }
 }
 
 @keyframes float {
   0% {
-    transform: translateY(0px);
+    transform: translateY(0px) translate3d(0, 0, 0);
   }
   50% {
-    transform: translateY(-6px);
+    transform: translateY(-6px) translate3d(0, 0, 0);
   }
   100% {
-    transform: translateY(0px);
+    transform: translateY(0px) translate3d(0, 0, 0);
   }
 }
 
 @keyframes pulseScale {
   0%, 100% {
-    transform: scale(1);
+    transform: scale(1) translate3d(0, 0, 0);
   }
   50% {
-    transform: scale(1.03);
+    transform: scale(1.03) translate3d(0, 0, 0);
   }
 }
 
@@ -317,22 +317,32 @@
 /* CSS Animation Utility Classes */
 .animate-fade-in {
   animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .animate-slide-up {
   animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .animate-slide-up-card {
   animation: slideUpCard 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 .animate-float {
   animation: float 3s ease-in-out infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .animate-pulse-scale {
   animation: pulseScale 2s ease-in-out infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 .animate-shimmer {
@@ -343,14 +353,15 @@
 
 /* Custom interactive ripple scale simulator */
 .btn-ripple-effect:active {
-  transform: scale(0.97);
+  transform: scale(0.97) translate3d(0, 0, 0);
   opacity: 0.92;
   transition: transform 0.1s ease, opacity 0.1s ease;
 }
 
-/* Theme switch transition helper */
+/* Theme switch transition helper optimized for mobile performance */
 .theme-transition {
-  transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: background-color, color;
 }
 
 /* Safe Area Inset utility helpers for mobile screens */

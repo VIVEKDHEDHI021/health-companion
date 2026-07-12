@@ -180,6 +180,7 @@ function ReportsPage() {
                 stroke="var(--primary)"
                 strokeWidth={2.5}
                 dot={{ r: 3 }}
+                isAnimationActive={false}
               />
             </LineChart>
           </ResponsiveContainer>
@@ -253,6 +254,7 @@ function ReportsPage() {
                   stroke="var(--chart-3)"
                   strokeWidth={2.5}
                   dot={{ r: 3 }}
+                  isAnimationActive={false}
                 />
               </LineChart>
             </ResponsiveContainer>
