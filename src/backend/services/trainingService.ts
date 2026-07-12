@@ -1,4 +1,5 @@
 import { supabase } from "@/db/client";
+import { Capacitor } from "@capacitor/core";
 
 export interface BoundingBox {
   x: number; // Normalized ratio [0.0, 1.0]
@@ -156,14 +157,40 @@ export const trainingService = {
       feedback_corrections: feedback,
     };
 
+    const fname = `smart_health_scanner_dataset_${new Date().toISOString().split("T")[0]}.json`;
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
+        const { Share } = await import("@capacitor/share");
+
+        const jsonString = JSON.stringify(dataset, null, 2);
+
+        const writeResult = await Filesystem.writeFile({
+          path: fname,
+          data: jsonString,
+          directory: Directory.Cache,
+          encoding: Encoding.UTF8,
+        });
+
+        await Share.share({
+          title: fname,
+          text: `Exported dataset: ${fname}`,
+          url: writeResult.uri,
+          dialogTitle: "Save or share dataset JSON",
+        });
+      } catch (err) {
+        console.error("[NATIVE EXPORT] Error sharing/saving JSON file:", err);
+        throw err;
+      }
+      return;
+    }
+
     const dataStr =
       "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataset, null, 2));
     const downloadAnchor = document.createElement("a");
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute(
-      "download",
-      `smart_health_scanner_dataset_${new Date().toISOString().split("T")[0]}.json`,
-    );
+    downloadAnchor.setAttribute("download", fname);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();

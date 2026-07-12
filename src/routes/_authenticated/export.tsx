@@ -11,6 +11,7 @@ import { useAuth } from "@/frontend/lib/auth-context";
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
+import { Capacitor } from "@capacitor/core";
 import {
   READING_TYPES,
   type GlucoseEntry,
@@ -147,6 +148,33 @@ function buildDailyRows(
   return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
 }
 
+async function handleNativeExport(fname: string, base64Data: string) {
+  try {
+    const { Filesystem, Directory } = await import("@capacitor/filesystem");
+    const { Share } = await import("@capacitor/share");
+
+    // Write file to cache directory first
+    const writeResult = await Filesystem.writeFile({
+      path: fname,
+      data: base64Data,
+      directory: Directory.Cache,
+    });
+
+    // Share / Save to file manager
+    await Share.share({
+      title: fname,
+      text: `Exported data: ${fname}`,
+      url: writeResult.uri,
+      dialogTitle: "Save or share export file",
+    });
+    
+    toast.success("Export file ready");
+  } catch (err) {
+    console.error("[NATIVE EXPORT] Error sharing/saving file:", err);
+    toast.error(err instanceof Error ? err.message : "Failed to save file");
+  }
+}
+
 function ExportPage() {
   const { user } = useAuth();
   const todayStr = format(new Date(), "yyyy-MM-dd");
@@ -205,8 +233,13 @@ function ExportPage() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Daily Log");
       const fname = `${(profile?.name || "patient").replace(/\s+/g, "_")}_${from}_to_${to}.xlsx`;
-      XLSX.writeFile(wb, fname);
-      toast.success("Excel file downloaded");
+      if (Capacitor.isNativePlatform()) {
+        const base64Data = XLSX.write(wb, { bookType: "xlsx", type: "base64" });
+        await handleNativeExport(fname, base64Data);
+      } else {
+        XLSX.writeFile(wb, fname);
+        toast.success("Excel file downloaded");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally {
@@ -275,8 +308,14 @@ function ExportPage() {
       });
 
       const fname = `${(profile?.name || "patient").replace(/\s+/g, "_")}_doctor_report_${from}_to_${to}.pdf`;
-      doc.save(fname);
-      toast.success("PDF report downloaded");
+      if (Capacitor.isNativePlatform()) {
+        const dataUri = doc.output("datauristring");
+        const base64Data = dataUri.split(",")[1];
+        await handleNativeExport(fname, base64Data);
+      } else {
+        doc.save(fname);
+        toast.success("PDF report downloaded");
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Export failed");
     } finally {
