@@ -49,7 +49,7 @@ function createSupabaseClient() {
 let _supabase: ReturnType<typeof createSupabaseClient> | undefined;
 
 // Lazy load db service to prevent circular dependencies at startup
-const getLocalDbService = async () => {
+export const getLocalDbService = async () => {
   const { localDbService } = await import("@/services/localDbService");
   return localDbService;
 };
@@ -191,6 +191,86 @@ class MobileQueryBuilder {
   }
 }
 
+class MobileMutationBuilder {
+  private tableName: string;
+  private method: "update" | "delete";
+  private payload?: any;
+  private realBuilder: any;
+  private filters: Array<{ column: string; value: any }> = [];
+
+  constructor(tableName: string, method: "update" | "delete", realBuilder: any, payload?: any) {
+    this.tableName = tableName;
+    this.method = method;
+    this.realBuilder = realBuilder;
+    this.payload = payload;
+  }
+
+  eq(column: string, value: any) {
+    this.filters.push({ column, value });
+    return this;
+  }
+
+  async then(onfulfilled?: (value: any) => any, onrejected?: (reason: any) => any) {
+    try {
+      const localDb = await getLocalDbService();
+
+      if (this.method === "update") {
+        if (this.tableName === "profiles" && this.filters.some(f => f.column === "user_id")) {
+          const userIdFilter = this.filters.find(f => f.column === "user_id");
+          await localDb.runQuery(
+            `UPDATE profiles SET name = ?, phone = ?, sync_status = 'pending_sync' WHERE user_id = ?`,
+            [this.payload.name, this.payload.phone, userIdFilter!.value]
+          );
+        } else {
+          const cols = Object.keys(this.payload).map(k => `${k} = ?`).join(", ");
+          const vals = Object.values(this.payload);
+          const whereClause = this.filters.map(f => `${f.column} = ?`).join(" AND ");
+          const filterVals = this.filters.map(f => f.value);
+          await localDb.runQuery(
+            `UPDATE ${this.tableName} SET ${cols}, sync_status = 'pending_sync' WHERE ${whereClause}`,
+            [...vals, ...filterVals]
+          );
+        }
+      } else if (this.method === "delete") {
+        const whereClause = this.filters.map(f => `${f.column} = ?`).join(" AND ");
+        const filterVals = this.filters.map(f => f.value);
+        await localDb.runQuery(
+          `DELETE FROM ${this.tableName} WHERE ${whereClause}`,
+          filterVals
+        );
+      }
+
+      // Try online query
+      let onlineQuery = this.method === "update"
+        ? this.realBuilder.update(this.payload)
+        : this.realBuilder.delete();
+
+      for (const filter of this.filters) {
+        onlineQuery = onlineQuery.eq(filter.column, filter.value);
+      }
+
+      const res = await onlineQuery;
+      if (!res.error) {
+        if (this.method === "update") {
+          if (this.tableName === "profiles" && this.filters.some(f => f.column === "user_id")) {
+            const userIdFilter = this.filters.find(f => f.column === "user_id");
+            await localDb.runQuery(`UPDATE profiles SET sync_status = 'synced' WHERE user_id = ?`, [userIdFilter!.value]);
+          } else {
+            const whereClause = this.filters.map(f => `${f.column} = ?`).join(" AND ");
+            const filterVals = this.filters.map(f => f.value);
+            await localDb.runQuery(`UPDATE ${this.tableName} SET sync_status = 'synced' WHERE ${whereClause}`, filterVals);
+          }
+        }
+      }
+      return onfulfilled ? onfulfilled(res) : res;
+    } catch (err) {
+      console.warn(`[OFFLINE] Mutation (${this.method}) on ${this.tableName} failed:`, err);
+      const res = { data: this.method === "update" ? this.payload : null, error: null };
+      return onfulfilled ? onfulfilled(res) : res;
+    }
+  }
+}
+
 // Import the supabase client like this:
 // import { supabase } from "@/db/client";
 export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>, {
@@ -245,14 +325,35 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
               return { data: record, error: null };
             }
           },
-          upsert: async (payload: any) => {
+          upsert: async (payload: any, options?: any) => {
             const payloadArray = Array.isArray(payload) ? payload : [payload];
+            const localDb = await getLocalDbService();
+            let existingId = payloadArray[0].id;
+
+            const conflictCols = options?.onConflict
+              ? options.onConflict.split(",").map((c: string) => c.trim())
+              : [];
+
+            if (!existingId && conflictCols.length > 0) {
+              const whereClause = conflictCols.map((c: string) => `${c} = ?`).join(" AND ");
+              const whereVals = conflictCols.map((c: string) => payloadArray[0][c]);
+              try {
+                const existingRows = await localDb.selectQuery(
+                  `SELECT id FROM ${tableName} WHERE ${whereClause}`,
+                  whereVals
+                );
+                if (existingRows && existingRows.length > 0) {
+                  existingId = existingRows[0].id;
+                }
+              } catch (err) {
+                console.warn("[OFFLINE] Failed to check for existing record in upsert:", err);
+              }
+            }
+
             const record = {
-              id: payloadArray[0].id || crypto.randomUUID(),
+              id: existingId || crypto.randomUUID(),
               ...payloadArray[0],
             };
-
-            const localDb = await getLocalDbService();
             if (tableName === "glucose_entries") {
               await localDb.cacheGlucose([{ ...record, sync_status: "pending_sync" }]);
             } else if (tableName === "insulin_entries") {
@@ -281,47 +382,10 @@ export const supabase = new Proxy({} as ReturnType<typeof createSupabaseClient>,
             }
           },
           update: (payload: any) => {
-            return {
-              eq: async (column: string, value: any) => {
-                const localDb = await getLocalDbService();
-                if (tableName === "profiles" && column === "user_id") {
-                  await localDb.runQuery(`UPDATE profiles SET name = ?, phone = ?, sync_status = 'pending_sync' WHERE user_id = ?`, [payload.name, payload.phone, value]);
-                } else {
-                  const cols = Object.keys(payload).map(k => `${k} = ?`).join(", ");
-                  const vals = Object.values(payload);
-                  await localDb.runQuery(`UPDATE ${tableName} SET ${cols}, sync_status = 'pending_sync' WHERE ${column} = ?`, [...vals, value]);
-                }
-
-                try {
-                  const res = await realBuilder.update(payload).eq(column, value);
-                  if (!res.error) {
-                    if (tableName === "profiles") {
-                      await localDb.runQuery(`UPDATE profiles SET sync_status = 'synced' WHERE user_id = ?`, [value]);
-                    } else {
-                      await localDb.runQuery(`UPDATE ${tableName} SET sync_status = 'synced' WHERE ${column} = ?`, [value]);
-                    }
-                  }
-                  return res;
-                } catch (err) {
-                  console.warn(`[OFFLINE] Update to ${tableName} failed:`, err);
-                  return { data: payload, error: null };
-                }
-              }
-            };
+            return new MobileMutationBuilder(tableName, "update", realBuilder, payload);
           },
           delete: () => {
-            return {
-              eq: async (column: string, value: any) => {
-                const localDb = await getLocalDbService();
-                await localDb.runQuery(`DELETE FROM ${tableName} WHERE ${column} = ?`, [value]);
-                try {
-                  return await realBuilder.delete().eq(column, value);
-                } catch (err) {
-                  console.warn(`[OFFLINE] Delete from ${tableName} failed:`, err);
-                  return { data: null, error: null };
-                }
-              }
-            };
+            return new MobileMutationBuilder(tableName, "delete", realBuilder);
           }
         };
       };

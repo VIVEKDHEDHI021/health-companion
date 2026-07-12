@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { useAuth } from "@/frontend/lib/auth-context";
-import { supabase } from "@/db/client";
+import { supabase, getLocalDbService } from "@/db/client";
 import type { GlucoseEntry, InsulinEntry, WeightEntry } from "@/frontend/lib/types";
 import { Capacitor } from "@capacitor/core";
 import { Activity } from "lucide-react";
@@ -37,6 +37,26 @@ export function HealthDataProvider({ children }: { children: ReactNode }) {
     // Only return cached values if we are on mobile, already loaded once, and not forcing a reload
     if (isMobile && initialized && !force) {
       return;
+    }
+
+    // Load from local SQLite database immediately for instant UI update on mobile
+    if (isMobile) {
+      try {
+        const localDb = await getLocalDbService();
+        const [localG, localI, localW, localP] = await Promise.all([
+          localDb.getGlucose(user.id),
+          localDb.getInsulin(user.id),
+          localDb.getWeight(user.id),
+          localDb.getProfile(user.id),
+        ]);
+        if (localG) setGlucose(localG as GlucoseEntry[]);
+        if (localI) setInsulin(localI as InsulinEntry[]);
+        if (localW) setWeight(localW as WeightEntry[]);
+        if (localP?.name) setProfileName(localP.name);
+        setInitialized(true);
+      } catch (err) {
+        console.warn("[HEALTH_DATA_CONTEXT] Local DB pre-load failed:", err);
+      }
     }
 
     setLoading(true);

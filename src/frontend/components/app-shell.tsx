@@ -17,6 +17,7 @@ import {
 import { useState, type ReactNode, useEffect } from "react";
 import { useAuth } from "@/frontend/lib/auth-context";
 import { useTheme } from "@/frontend/lib/theme";
+import { useHealthData } from "@/frontend/providers/data-context";
 import { Button } from "@/frontend/components/ui/button";
 import { cn } from "@/frontend/lib/utils";
 import { useNotifications } from "@/frontend/hooks/useNotifications";
@@ -47,7 +48,15 @@ const NAV = [
 export function AppShell({ children }: { children: ReactNode }) {
   const { user, signOut } = useAuth();
   const { theme, toggle } = useTheme();
+  const { profileName } = useHealthData();
   useNotifications();
+
+  const greeting = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  })();
   const navigate = useNavigate();
   const location = useLocation();
   const path = location.pathname;
@@ -88,10 +97,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           await StatusBar.setStyle({
             style: theme === "dark" ? Style.Dark : Style.Light,
           });
-          // Match GlucoLab's color scheme
-          await StatusBar.setBackgroundColor({
-            color: theme === "dark" ? "#16161a" : "#fbfbfe",
-          });
+          // Make status bar transparent and overlay the webview so the app blends with it
+          await StatusBar.setOverlaysWebView({ overlay: true });
+          await StatusBar.setBackgroundColor({ color: "#00000000" });
         } catch (err) {
           console.warn("Native StatusBar styling failed:", err);
         }
@@ -270,6 +278,12 @@ export function AppShell({ children }: { children: ReactNode }) {
                 </div>
               </div>
             </Link>
+            {profileName && (
+              <div className="flex items-center gap-1.5 ml-2 border-l border-border/80 pl-2.5 text-[11px] font-semibold text-muted-foreground leading-none">
+                <span>{greeting},</span>
+                <span className="text-foreground font-bold truncate max-w-[100px]">{profileName}</span>
+              </div>
+            )}
           </div>
 
           {/* Desktop Navigation Links */}
@@ -296,6 +310,32 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
 
           <div className="flex items-center gap-2">
+            {/* Desktop Navigation Shortcuts */}
+            <div className="hidden md:flex items-center gap-1">
+              <Link
+                to="/profile"
+                onClick={triggerHapticFeedback}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-muted text-muted-foreground",
+                  path === "/profile" && "bg-primary-soft text-primary hover:bg-primary-soft font-semibold"
+                )}
+                title="Profile"
+              >
+                <User className="h-4.5 w-4.5" />
+              </Link>
+              <Link
+                to="/settings"
+                onClick={triggerHapticFeedback}
+                className={cn(
+                  "flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-200 hover:bg-muted text-muted-foreground",
+                  path === "/settings" && "bg-primary-soft text-primary hover:bg-primary-soft font-semibold"
+                )}
+                title="Settings"
+              >
+                <Settings className="h-4.5 w-4.5" />
+              </Link>
+            </div>
+
             <Button
               variant="ghost"
               size="icon"
@@ -308,13 +348,27 @@ export function AppShell({ children }: { children: ReactNode }) {
             >
               {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </Button>
+
+            {/* Desktop Sign Out Shortcut */}
+            <div className="hidden md:block">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+                className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 btn-ripple-effect"
+                title="Sign Out"
+              >
+                <LogOut className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </header>
 
       {/* Main viewport with bottom safe-area considerations */}
       <main className={cn(
-        "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 flex-grow w-full animate-fade-in",
+        "mx-auto max-w-7xl px-4 py-6 sm:px-6 sm:py-8 flex-grow w-full",
         isMobile ? "pb-[calc(6rem+env(safe-area-inset-bottom,0px))]" : "pb-24 md:pb-8"
       )}>
         {children}

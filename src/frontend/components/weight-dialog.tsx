@@ -10,6 +10,7 @@ import { showLocalNotification, triggerPushNotification } from "../../services/n
 import { Button } from "@/frontend/components/ui/button";
 import { Input } from "@/frontend/components/ui/input";
 import { Label } from "@/frontend/components/ui/label";
+import { Textarea } from "@/frontend/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -102,7 +103,7 @@ export function WeightDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="text-xl">
             {entry ? "Edit Weight Entry" : "Log Weight"}
@@ -136,7 +137,7 @@ export function WeightDialog({
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notes</Label>
-            <Input id="notes" {...form.register("notes")} />
+            <Textarea id="notes" rows={2} placeholder="Optional notes" {...form.register("notes")} />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

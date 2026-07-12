@@ -115,7 +115,7 @@ function ProfilePage() {
                 id="diabType"
                 value={diabetesType}
                 onChange={(e) => setDiabetesType(e.target.value)}
-                className="w-full bg-card text-sm h-9 rounded-md border border-input px-3 py-1 text-foreground shadow-sm focus:outline-none focus:ring-1 focus:ring-ring focus:border-primary transition-all duration-200"
+                className="w-full bg-muted/45 text-sm h-11 rounded-xl border border-border px-3.5 py-2 text-foreground shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all duration-200 theme-transition"
               >
                 <option value="Type 1">Type 1</option>
                 <option value="Type 2">Type 2</option>

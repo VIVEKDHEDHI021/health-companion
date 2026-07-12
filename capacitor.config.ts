@@ -7,6 +7,11 @@ const config: CapacitorConfig = {
   server: {
     cleartext: true,
   },
+  plugins: {
+    StatusBar: {
+      overlaysWebView: true,
+    },
+  },
 };
 
 export default config;

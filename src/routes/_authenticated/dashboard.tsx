@@ -36,7 +36,6 @@ import {
   type InsulinEntry,
   type WeightEntry,
 } from "@/frontend/lib/types";
-import { Settings } from "lucide-react";
 import { cn } from "@/frontend/lib/utils";
 import { Tabs, TabsList, TabsTrigger } from "@/frontend/components/ui/tabs";
 
@@ -54,6 +53,7 @@ function DashboardPage() {
   const [weightOpen, setWeightOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [days, setDays] = useState<7 | 30 | 90>(7);
+  const [fabOpen, setFabOpen] = useState(false);
 
   const load = async () => {
     await refreshData(true);
@@ -100,58 +100,9 @@ function DashboardPage() {
     [trendReadings, days],
   );
 
-  const greeting = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return "Good morning";
-    if (h < 18) return "Good afternoon";
-    return "Good evening";
-  })();
-
   return (
-    <div className="space-y-6">
-      {/* Welcome */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">{greeting},</p>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold sm:text-4xl">
-              {profileName || "there"} 👋
-            </h1>
-            <Button
-              onClick={() => setProfileOpen(true)}
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted/50 mt-1"
-              title="Edit Profile"
-            >
-              <Settings className="h-4.5 w-4.5" />
-            </Button>
-          </div>
-        </div>
-        <div className="flex w-full items-center gap-2 sm:w-[380px]">
-          <Button
-            onClick={() => setGlucoseOpen(true)}
-            variant="secondary"
-            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
-          >
-            <Plus className="h-4 w-4 text-primary" /> Glucose
-          </Button>
-          <Button
-            onClick={() => setInsulinOpen(true)}
-            variant="secondary"
-            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
-          >
-            <Syringe className="h-4 w-4 text-primary" /> Insulin
-          </Button>
-          <Button
-            onClick={() => setWeightOpen(true)}
-            variant="secondary"
-            className="flex-1 h-11 px-2 sm:px-4 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 rounded-xl border border-border shadow-soft transition-all active:scale-95"
-          >
-            <Scale className="h-4 w-4 text-primary" /> Weight
-          </Button>
-        </div>
-      </div>
+    <>
+      <div className="space-y-5 md:space-y-6 animate-fade-in">
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
@@ -195,7 +146,7 @@ function DashboardPage() {
       </div>
 
       {/* Chart */}
-      <div className="rounded-2xl border border-border bg-card p-5 shadow-soft sm:p-6">
+      <div className="rounded-2xl border border-border bg-card p-4 sm:p-6 shadow-soft">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="font-display text-lg font-bold">{days}-day glucose trend</h2>
@@ -210,7 +161,7 @@ function DashboardPage() {
           </Tabs>
         </div>
         {chartData.length > 0 ? (
-          <div className="h-64 w-full">
+          <div className="h-56 sm:h-64 w-full">
             <ResponsiveContainer>
               <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <ReferenceArea y1={70} y2={180} fill="oklch(0.62 0.15 155)" fillOpacity={0.08} />
@@ -262,31 +213,99 @@ function DashboardPage() {
           />
         )}
       </div>
-
-      {/* Reminders */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <ReminderCard
-          icon={<Clock className="h-4 w-4" />}
-          title="Check glucose"
-          body="Aim for 4–7 readings spread through the day."
-        />
-        <ReminderCard
-          icon={<Syringe className="h-4 w-4" />}
-          title="Insulin doses"
-          body="Don't forget to log your insulin schedule daily."
-        />
-        <ReminderCard
-          icon={<AlertCircle className="h-4 w-4" />}
-          title="Stay hydrated"
-          body="Drink water regularly — it helps glucose control."
-        />
+      {/* End of animated content wrapper to prevent stacking context constraints */}
       </div>
+
 
       <GlucoseDialog open={glucoseOpen} onOpenChange={setGlucoseOpen} onSaved={load} />
       <InsulinDialog open={insulinOpen} onOpenChange={setInsulinOpen} onSaved={load} />
       <WeightDialog open={weightOpen} onOpenChange={setWeightOpen} onSaved={load} />
       <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} onSaved={load} />
-    </div>
+
+      {/* Expandable FAB Speed Dial */}
+      {/* FAB Backdrop */}
+      <div
+        onClick={() => setFabOpen(false)}
+        className={cn(
+          "fixed inset-0 z-45 bg-zinc-950/40 backdrop-blur-sm transition-opacity duration-300",
+          fabOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        )}
+      />
+
+      {/* FAB Speed Dial Container */}
+      <div className="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+        {/* Speed Dial Menu */}
+        <div className={cn(
+          "flex flex-col items-end gap-3 transition-all duration-300 origin-bottom",
+          fabOpen ? "scale-100 opacity-100 translate-y-0" : "scale-75 opacity-0 translate-y-4 pointer-events-none"
+        )}>
+          {/* Action: Glucose */}
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-1 text-xs font-semibold text-zinc-100 shadow-soft">
+              Glucose
+            </span>
+            <Button
+              onClick={() => {
+                setGlucoseOpen(true);
+                setFabOpen(false);
+              }}
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border border-border bg-card shadow-soft hover:bg-muted/50 transition-all hover:scale-105 active:scale-95"
+            >
+              <Droplet className="h-5 w-5 text-primary" />
+            </Button>
+          </div>
+
+          {/* Action: Insulin */}
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-1 text-xs font-semibold text-zinc-100 shadow-soft">
+              Insulin
+            </span>
+            <Button
+              onClick={() => {
+                setInsulinOpen(true);
+                setFabOpen(false);
+              }}
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border border-border bg-card shadow-soft hover:bg-muted/50 transition-all hover:scale-105 active:scale-95"
+            >
+              <Syringe className="h-5 w-5 text-primary" />
+            </Button>
+          </div>
+
+          {/* Action: Weight */}
+          <div className="flex items-center gap-2">
+            <span className="rounded-lg bg-zinc-900 border border-zinc-800 px-2 py-1 text-xs font-semibold text-zinc-100 shadow-soft">
+              Weight
+            </span>
+            <Button
+              onClick={() => {
+                setWeightOpen(true);
+                setFabOpen(false);
+              }}
+              variant="secondary"
+              size="icon"
+              className="h-12 w-12 rounded-full border border-border bg-card shadow-soft hover:bg-muted/50 transition-all hover:scale-105 active:scale-95"
+            >
+              <Scale className="h-5 w-5 text-primary" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Main Floating Button */}
+        <Button
+          onClick={() => setFabOpen(!fabOpen)}
+          className={cn(
+            "h-14 w-14 rounded-full gradient-primary shadow-lg flex items-center justify-center transition-all duration-300 transform active:scale-90",
+            fabOpen ? "rotate-45" : "rotate-0"
+          )}
+        >
+          <Plus className="h-6 w-6 text-primary-foreground" />
+        </Button>
+      </div>
+    </>
   );
 }
 
@@ -310,7 +329,7 @@ function StatCard({
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft sm:p-5">
       <div className="flex items-center justify-between">
-        <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+        <div className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           {label}
         </div>
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary-soft text-primary">

@@ -1,11 +1,11 @@
-import { Outlet, createRootRoute, HeadContent, Scripts, Link } from "@tanstack/react-router";
+import { Outlet, createRootRoute, HeadContent, Scripts, Link, useRouterState } from "@tanstack/react-router";
 import { Toaster } from "@/frontend/components/ui/sonner";
 import { AuthProvider } from "@/frontend/lib/auth-context";
 import { ThemeProvider } from "@/frontend/lib/theme";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import { HealthDataProvider } from "@/frontend/providers/data-context";
 import appCss from "../styles.css?url";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Capacitor } from "@capacitor/core";
 import { toast } from "sonner";
 import { Activity, ShieldAlert, KeyRound } from "lucide-react";
@@ -88,6 +88,49 @@ function RootComponent() {
   const [dbInitialized, setDbInitialized] = useState(false);
   const [biometricRequired, setBiometricRequired] = useState(false);
   const [biometricAuthenticated, setBiometricAuthenticated] = useState(false);
+
+  const routerState = useRouterState();
+  const currentPath = routerState.location.pathname;
+  const currentPathRef = useRef(currentPath);
+
+  useEffect(() => {
+    currentPathRef.current = currentPath;
+  }, [currentPath]);
+
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+
+    let lastTime = 0;
+    const backButtonListener = import("@capacitor/app").then(({ App }) => {
+      return App.addListener("backButton", (event) => {
+        // If any dialog is open, close it first and consume the back press
+        const openDialog = document.querySelector('[role="dialog"]');
+        if (openDialog) {
+          window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", code: "Escape" }));
+          return;
+        }
+
+        const path = currentPathRef.current;
+        const isMainScreen = ["/", "/dashboard", "/welcome", "/login"].includes(path);
+
+        if (!isMainScreen && event.canGoBack) {
+          window.history.back();
+        } else {
+          const currentTime = new Date().getTime();
+          if (currentTime - lastTime < 2000) {
+            App.exitApp();
+          } else {
+            lastTime = currentTime;
+            toast("Press back again to exit");
+          }
+        }
+      });
+    });
+
+    return () => {
+      backButtonListener.then((l) => l.remove());
+    };
+  }, []);
 
   useEffect(() => {
     async function initMobile() {

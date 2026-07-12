@@ -197,23 +197,24 @@ export function GlucoseDialog({ open, onOpenChange, entry, onSaved }: Props) {
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="food">Food eaten</Label>
-            <Input id="food" placeholder="e.g. Oatmeal, fruit" {...form.register("food")} />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="insulin_all_day">All-day Insulin (units/type)</Label>
-            <Input
-              id="insulin_all_day"
-              placeholder="e.g. 20u Lantus"
-              {...form.register("insulin_all_day")}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="food">Food eaten</Label>
+              <Input id="food" placeholder="e.g. Oatmeal, fruit" {...form.register("food")} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="insulin_all_day">All-day Insulin</Label>
+              <Input
+                id="insulin_all_day"
+                placeholder="e.g. 20u Lantus"
+                {...form.register("insulin_all_day")}
+              />
+            </div>
           </div>
 
           <div className="space-y-1.5">
             <Label htmlFor="notes">Notes</Label>
-            <Textarea id="notes" rows={3} {...form.register("notes")} />
+            <Textarea id="notes" rows={2} {...form.register("notes")} />
           </div>
 
           <DialogFooter>

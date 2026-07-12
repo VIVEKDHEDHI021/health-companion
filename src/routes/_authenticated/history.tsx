@@ -25,9 +25,6 @@ function HistoryPage() {
   const { user } = useAuth();
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const { glucose, insulin, weight, refreshData } = useHealthData();
-  const [localEntries, setLocalEntries] = useState<GlucoseEntry[]>([]);
-  const [localInsulin, setLocalInsulin] = useState<InsulinEntry[]>([]);
-  const [localWeight, setLocalWeight] = useState<WeightEntry[]>([]);
   const [activeTab, setActiveTab] = useState<"glucose" | "weight">("glucose");
   const [search, setSearch] = useState("");
   const [from, setFrom] = useState("");
@@ -38,8 +35,6 @@ function HistoryPage() {
   const [weightOpen, setWeightOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const PAGE_SIZE = 10;
-
-  const isMobile = Capacitor.isNativePlatform();
 
   const handleFromChange = (val: string) => {
     if (val > todayStr) {
@@ -59,58 +54,22 @@ function HistoryPage() {
 
   const load = async () => {
     if (!user) return;
-    if (isMobile) {
-      await refreshData(true);
-      return;
-    }
-    
-    // Fetch glucose entries
-    let q = supabase
-      .from("glucose_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("date_time", { ascending: false });
-    if (from) q = q.gte("date_time", new Date(from).toISOString());
-    if (to) q = q.lte("date_time", new Date(`${to}T23:59:59`).toISOString());
-    const { data } = await q;
-    if (data) setLocalEntries(data as GlucoseEntry[]);
-
-    // Fetch insulin entries
-    const { data: insData } = await supabase
-      .from("insulin_entries")
-      .select("*")
-      .eq("user_id", user.id);
-    if (insData) setLocalInsulin(insData as InsulinEntry[]);
-
-    // Fetch weight entries
-    const { data: weightData } = await supabase
-      .from("weight_entries")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("entry_date", { ascending: false });
-    if (weightData) setLocalWeight(weightData as WeightEntry[]);
+    await refreshData(true);
   };
 
   useEffect(() => {
-    if (!isMobile) {
-      load();
-    }
-  }, [user, from, to]);
-
-  useEffect(() => {
-    refreshData(false);
+    load();
   }, [user]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [search, from, to, activeTab]);
 
-  const entriesList = isMobile ? glucose : localEntries;
-  const insulinEntries = isMobile ? insulin : localInsulin;
-  const weightEntries = isMobile ? weight : localWeight;
+  const entriesList = glucose;
+  const insulinEntries = insulin;
+  const weightEntries = weight;
 
   const filteredByDate = useMemo(() => {
-    if (!isMobile) return entriesList;
     return entriesList.filter((e) => {
       const entryTime = new Date(e.date_time);
       if (from) {
@@ -123,7 +82,7 @@ function HistoryPage() {
       }
       return true;
     });
-  }, [entriesList, from, to, isMobile]);
+  }, [entriesList, from, to]);
 
   const filtered = filteredByDate.filter((e) => {
     if (!search) return true;
