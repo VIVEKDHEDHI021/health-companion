@@ -55,44 +55,37 @@ const getPointColor = (glucose: number, type: any) => {
 };
 
 const CustomDot = (props: any) => {
-  const { cx, cy, payload, onClick } = props;
+  const { cx, cy, payload, onClick, selectedPoint } = props;
   if (!cx || !cy) return null;
+  const isSelected = selectedPoint && selectedPoint.id === payload.id;
   const color = getPointColor(payload.glucose, payload.type);
   return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={5}
-      fill={color}
-      stroke="var(--card)"
-      strokeWidth={1.5}
-      className="cursor-pointer hover:scale-125 transition-transform"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onClick) onClick(payload);
-      }}
-    />
-  );
-};
-
-const CustomActiveDot = (props: any) => {
-  const { cx, cy, payload, onClick } = props;
-  if (!cx || !cy) return null;
-  const color = getPointColor(payload.glucose, payload.type);
-  return (
-    <circle
-      cx={cx}
-      cy={cy}
-      r={7}
-      fill={color}
-      stroke="var(--card)"
-      strokeWidth={2}
-      className="cursor-pointer"
-      onClick={(e) => {
-        e.stopPropagation();
-        if (onClick) onClick(payload);
-      }}
-    />
+    <g>
+      {isSelected && (
+        <circle
+          cx={cx}
+          cy={cy}
+          r={10}
+          fill={color}
+          fillOpacity={0.25}
+          className="animate-ping"
+          style={{ transformOrigin: `${cx}px ${cy}px` }}
+        />
+      )}
+      <circle
+        cx={cx}
+        cy={cy}
+        r={isSelected ? 7 : 5}
+        fill={color}
+        stroke="var(--card)"
+        strokeWidth={isSelected ? 2.5 : 1.5}
+        className="cursor-pointer transition-all duration-200"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onClick) onClick(payload);
+        }}
+      />
+    </g>
   );
 };
 
@@ -162,6 +155,19 @@ function DashboardPage() {
       }),
     [trendReadings],
   );
+
+  useEffect(() => {
+    if (chartData.length > 0) {
+      const exists = selectedPoint ? chartData.find((p) => p.id === selectedPoint.id) : null;
+      if (!exists) {
+        setSelectedPoint(chartData[chartData.length - 1]);
+      } else {
+        setSelectedPoint(exists);
+      }
+    } else {
+      setSelectedPoint(null);
+    }
+  }, [chartData]);
 
   return (
     <>
@@ -260,8 +266,11 @@ function DashboardPage() {
                 margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
                 onClick={(state) => {
                   if (state && state.activePayload && state.activePayload.length) {
-                    setSelectedPoint(state.activePayload[0].payload);
-                    setIsFullscreen(true);
+                    const clickedData = state.activePayload[0].payload;
+                    if (clickedData && typeof clickedData.glucose === "number") {
+                      setSelectedPoint(clickedData);
+                      setIsFullscreen(true);
+                    }
                   }
                 }}
               >
@@ -285,29 +294,6 @@ function DashboardPage() {
                   axisLine={false}
                   domain={[40, "auto"]}
                 />
-                <Tooltip
-                  content={({ active, payload }) => {
-                    if (active && payload && payload.length) {
-                      const data = payload[0].payload;
-                      return (
-                        <div className="rounded-xl border border-border bg-popover p-3 shadow-md text-xs space-y-1">
-                          <p className="font-semibold text-foreground">{data.fullTime}</p>
-                          <div className="flex items-center gap-1.5">
-                            <span className="h-2 w-2 rounded-full bg-primary" />
-                            <span className="text-muted-foreground">Glucose:</span>
-                            <span className="font-bold text-foreground">{data.glucose} mg/dL</span>
-                          </div>
-                          {data.type && (
-                            <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                              Type: {READING_LABELS[data.type as ReadingType] || data.type}
-                            </div>
-                          )}
-                        </div>
-                      );
-                    }
-                    return null;
-                  }}
-                />
                 <Line
                   type="monotone"
                   dataKey="glucose"
@@ -315,20 +301,14 @@ function DashboardPage() {
                   strokeWidth={2.5}
                   dot={
                     <CustomDot
+                      selectedPoint={selectedPoint}
                       onClick={(payload) => {
                         setSelectedPoint(payload);
                         setIsFullscreen(true);
                       }}
                     />
                   }
-                  activeDot={
-                    <CustomActiveDot
-                      onClick={(payload) => {
-                        setSelectedPoint(payload);
-                        setIsFullscreen(true);
-                      }}
-                    />
-                  }
+                  activeDot={false}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -489,7 +469,10 @@ function DashboardPage() {
                   margin={{ top: 10, right: 15, left: -20, bottom: 5 }}
                   onClick={(state) => {
                     if (state && state.activePayload && state.activePayload.length) {
-                      setSelectedPoint(state.activePayload[0].payload);
+                      const clickedData = state.activePayload[0].payload;
+                      if (clickedData && typeof clickedData.glucose === "number") {
+                        setSelectedPoint(clickedData);
+                      }
                     }
                   }}
                 >
@@ -513,24 +496,6 @@ function DashboardPage() {
                     axisLine={false}
                     domain={[40, "auto"]}
                   />
-                  <Tooltip
-                    content={({ active, payload }) => {
-                      if (active && payload && payload.length) {
-                        const data = payload[0].payload;
-                        return (
-                          <div className="rounded-xl border border-border bg-popover p-3 shadow-md text-xs space-y-1">
-                            <p className="font-semibold text-foreground">{data.fullTime}</p>
-                            <div className="flex items-center gap-1.5">
-                              <span className="h-2 w-2 rounded-full bg-primary" />
-                              <span className="text-muted-foreground">Glucose:</span>
-                              <span className="font-bold text-foreground">{data.glucose} mg/dL</span>
-                            </div>
-                          </div>
-                        );
-                      }
-                      return null;
-                    }}
-                  />
                   <Line
                     type="monotone"
                     dataKey="glucose"
@@ -538,18 +503,13 @@ function DashboardPage() {
                     strokeWidth={3}
                     dot={
                       <CustomDot
+                        selectedPoint={selectedPoint}
                         onClick={(payload) => {
                           setSelectedPoint(payload);
                         }}
                       />
                     }
-                    activeDot={
-                      <CustomActiveDot
-                        onClick={(payload) => {
-                          setSelectedPoint(payload);
-                        }}
-                      />
-                    }
+                    activeDot={false}
                   />
                 </LineChart>
               </ResponsiveContainer>
