@@ -162,25 +162,26 @@ export const trainingService = {
     if (Capacitor.isNativePlatform()) {
       try {
         const { Filesystem, Directory, Encoding } = await import("@capacitor/filesystem");
-        const { Share } = await import("@capacitor/share");
+
+        const check = await Filesystem.checkPermissions();
+        if (check.publicStorage !== "granted") {
+          const request = await Filesystem.requestPermissions();
+          if (request.publicStorage !== "granted") {
+            console.warn("Storage permission denied");
+            return;
+          }
+        }
 
         const jsonString = JSON.stringify(dataset, null, 2);
 
-        const writeResult = await Filesystem.writeFile({
+        await Filesystem.writeFile({
           path: fname,
           data: jsonString,
-          directory: Directory.Cache,
+          directory: Directory.Documents,
           encoding: Encoding.UTF8,
         });
-
-        await Share.share({
-          title: fname,
-          text: `Exported dataset: ${fname}`,
-          url: writeResult.uri,
-          dialogTitle: "Save or share dataset JSON",
-        });
       } catch (err) {
-        console.error("[NATIVE EXPORT] Error sharing/saving JSON file:", err);
+        console.error("[NATIVE EXPORT] Error writing JSON file to Documents:", err);
         throw err;
       }
       return;

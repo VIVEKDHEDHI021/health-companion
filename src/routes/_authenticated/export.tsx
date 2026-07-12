@@ -151,27 +151,30 @@ function buildDailyRows(
 async function handleNativeExport(fname: string, base64Data: string) {
   try {
     const { Filesystem, Directory } = await import("@capacitor/filesystem");
-    const { Share } = await import("@capacitor/share");
 
-    // Write file to cache directory first
-    const writeResult = await Filesystem.writeFile({
+    // Request permissions for storage on Android
+    const status = await Filesystem.checkPermissions();
+    if (status.publicStorage !== "granted") {
+      const req = await Filesystem.requestPermissions();
+      if (req.publicStorage !== "granted") {
+        toast.error("Storage permission denied. Cannot save file.");
+        return;
+      }
+    }
+
+    // Write file directly to Documents folder
+    await Filesystem.writeFile({
       path: fname,
       data: base64Data,
-      directory: Directory.Cache,
-    });
-
-    // Share / Save to file manager
-    await Share.share({
-      title: fname,
-      text: `Exported data: ${fname}`,
-      url: writeResult.uri,
-      dialogTitle: "Save or share export file",
+      directory: Directory.Documents,
     });
     
-    toast.success("Export file ready");
+    toast.success(`Downloaded directly to Documents folder: ${fname}`, {
+      duration: 5000,
+    });
   } catch (err) {
-    console.error("[NATIVE EXPORT] Error sharing/saving file:", err);
-    toast.error(err instanceof Error ? err.message : "Failed to save file");
+    console.error("[NATIVE EXPORT] Error writing file to Documents:", err);
+    toast.error(err instanceof Error ? err.message : "Failed to download file");
   }
 }
 
