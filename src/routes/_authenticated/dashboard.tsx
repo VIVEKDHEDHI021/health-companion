@@ -55,33 +55,43 @@ const getPointColor = (glucose: number, type: any) => {
 };
 
 const CustomDot = (props: any) => {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, onClick } = props;
   if (!cx || !cy) return null;
   const color = getPointColor(payload.glucose, payload.type);
   return (
     <circle
       cx={cx}
       cy={cy}
-      r={4.5}
+      r={5}
       fill={color}
       stroke="var(--card)"
       strokeWidth={1.5}
+      className="cursor-pointer hover:scale-125 transition-transform"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) onClick(payload);
+      }}
     />
   );
 };
 
 const CustomActiveDot = (props: any) => {
-  const { cx, cy, payload } = props;
+  const { cx, cy, payload, onClick } = props;
   if (!cx || !cy) return null;
   const color = getPointColor(payload.glucose, payload.type);
   return (
     <circle
       cx={cx}
       cy={cy}
-      r={6.5}
+      r={7}
       fill={color}
       stroke="var(--card)"
       strokeWidth={2}
+      className="cursor-pointer"
+      onClick={(e) => {
+        e.stopPropagation();
+        if (onClick) onClick(payload);
+      }}
     />
   );
 };
@@ -287,8 +297,22 @@ function DashboardPage() {
                   dataKey="glucose"
                   stroke="var(--primary)"
                   strokeWidth={2.5}
-                  dot={<CustomDot />}
-                  activeDot={<CustomActiveDot />}
+                  dot={
+                    <CustomDot
+                      onClick={(payload) => {
+                        setSelectedPoint(payload);
+                        setIsFullscreen(true);
+                      }}
+                    />
+                  }
+                  activeDot={
+                    <CustomActiveDot
+                      onClick={(payload) => {
+                        setSelectedPoint(payload);
+                        setIsFullscreen(true);
+                      }}
+                    />
+                  }
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -478,8 +502,20 @@ function DashboardPage() {
                     dataKey="glucose"
                     stroke="var(--primary)"
                     strokeWidth={3}
-                    dot={<CustomDot />}
-                    activeDot={<CustomActiveDot />}
+                    dot={
+                      <CustomDot
+                        onClick={(payload) => {
+                          setSelectedPoint(payload);
+                        }}
+                      />
+                    }
+                    activeDot={
+                      <CustomActiveDot
+                        onClick={(payload) => {
+                          setSelectedPoint(payload);
+                        }}
+                      />
+                    }
                   />
                 </LineChart>
               </ResponsiveContainer>
