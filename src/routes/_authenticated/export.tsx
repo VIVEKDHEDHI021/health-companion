@@ -162,18 +162,27 @@ async function handleNativeExport(fname: string, base64Data: string) {
       }
     }
 
-    // Write file directly to Documents folder
+    // Ensure GlucoLab folder exists inside Documents folder
+    await Filesystem.mkdir({
+      path: "GlucoLab",
+      directory: Directory.Documents,
+      recursive: true,
+    }).catch((err) => {
+      console.log("[NATIVE EXPORT] GlucoLab directory already exists or creation failed", err);
+    });
+
+    // Write file directly inside GlucoLab folder
     await Filesystem.writeFile({
-      path: fname,
+      path: `GlucoLab/${fname}`,
       data: base64Data,
       directory: Directory.Documents,
     });
     
-    toast.success(`Downloaded directly to Documents folder: ${fname}`, {
-      duration: 5000,
+    toast.success(`Saved successfully! Open your File Manager -> Documents -> GlucoLab to view: ${fname}`, {
+      duration: 6000,
     });
   } catch (err) {
-    console.error("[NATIVE EXPORT] Error writing file to Documents:", err);
+    console.error("[NATIVE EXPORT] Error writing file to GlucoLab folder:", err);
     toast.error(err instanceof Error ? err.message : "Failed to download file");
   }
 }

@@ -172,16 +172,25 @@ export const trainingService = {
           }
         }
 
+        // Ensure GlucoLab folder exists inside Documents folder
+        await Filesystem.mkdir({
+          path: "GlucoLab",
+          directory: Directory.Documents,
+          recursive: true,
+        }).catch((err) => {
+          console.log("[NATIVE EXPORT] GlucoLab directory already exists or creation failed", err);
+        });
+
         const jsonString = JSON.stringify(dataset, null, 2);
 
         await Filesystem.writeFile({
-          path: fname,
+          path: `GlucoLab/${fname}`,
           data: jsonString,
           directory: Directory.Documents,
           encoding: Encoding.UTF8,
         });
       } catch (err) {
-        console.error("[NATIVE EXPORT] Error writing JSON file to Documents:", err);
+        console.error("[NATIVE EXPORT] Error writing JSON file to GlucoLab folder:", err);
         throw err;
       }
       return;
